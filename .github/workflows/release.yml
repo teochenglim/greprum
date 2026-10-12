@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Gate (make check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: tag must match VERSION
+        env:
+          TAG: ${{ github.ref_name }}
+        run: test "$TAG" = "v$(cat VERSION)"
+      - run: make check
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-13, target: x86_64-apple-darwin }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tracker/build.mjs
+      - name: Build
+        env:
+          GREPRUM_VERSION: ${{ github.ref_name }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Package
+        env:
+          VERSION: ${{ github.ref_name }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          NAME="greprum-${VERSION}-${TARGET}"
+          mkdir -p "dist/${NAME}"
+          cp "target/${TARGET}/release/greprum" LICENSE README.md "dist/${NAME}/" 2>/dev/null || cp "target/${TARGET}/release/greprum" "dist/${NAME}/"
+          tar -czf "${NAME}.tar.gz" -C dist "${NAME}"
+          shasum -a 256 "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: greprum-${{ matrix.target }}
+          path: |
+            greprum-*.tar.gz
+            greprum-*.sha256
+
+  publish:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          NOTES="RELEASE/${TAG}.md"
+          if [ -f "$NOTES" ]; then
+            gh release create "$TAG" artifacts/* --title "$TAG" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" artifacts/* --title "$TAG" --generate-notes
+          fi

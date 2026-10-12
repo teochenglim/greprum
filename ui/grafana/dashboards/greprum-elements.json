@@ -1,0 +1,107 @@
+{
+  "uid": "greprum-elements",
+  "title": "GrepRUM / Elements",
+  "tags": [
+    "greprum",
+    "elements"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "What do people click?",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT el_css AS element, `path` AS page, max(el_text) AS text, count(*) AS clicks FROM events WHERE site_id = '${site}' AND event_name = '$click' AND el_css IS NOT NULL AND $__timeFilter(ts) GROUP BY el_css, `path` ORDER BY clicks DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Where do people get frustrated? (rage and dead clicks)",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT el_css AS element, `path` AS page, sum(CASE WHEN event_name = '$click' THEN 1 ELSE 0 END) AS clicks, sum(CASE WHEN event_name = '$rage_click' THEN 1 ELSE 0 END) AS rage_clicks, sum(CASE WHEN event_name = '$dead_click' THEN 1 ELSE 0 END) AS dead_clicks FROM events WHERE site_id = '${site}' AND event_name IN ('$click','$rage_click','$dead_click') AND el_css IS NOT NULL AND $__timeFilter(ts) GROUP BY el_css, `path` ORDER BY rage_clicks + dead_clicks DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "token": "",
+  "visitor_id": "v_8f2c",
+  "session_id": "s_91ab",
+  "sent_at": 1760236806000,
+  "sample_rate": 0.25,
+  "env": "prod",
+  "release": "1.4.2",
+  "ctx": {"plan": "pro"},
+  "events": [
+    {"ts": 1760236800000, "seq": 0, "name": "$session_start", "path": "/pricing", "parent_path": "",
+     "page_group": "pricing", "is_new_visitor": true, "referrer": "https://example.com",
+     "props": {"utm_source": "newsletter"}},
+    {"ts": 1760236800000, "seq": 1, "name": "$pageview", "path": "/pricing", "parent_path": "", "page_group": "pricing"},
+    {"ts": 1760236805000, "seq": 2, "name": "$click", "path": "/pricing", "page_group": "pricing",
+     "element": {"tag": "button", "id": "cta", "role": "", "text": "Start free",
+                 "css": "main>div.hero>button#cta", "attrs": {}}}
+  ]
+}

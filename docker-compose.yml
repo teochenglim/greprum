@@ -1,0 +1,22 @@
+# Local stack: GreptimeDB + GrepRUM. `docker compose up`, then
+#   docker compose run --rm greprum migrate --config /etc/greprum/greprum.toml
+services:
+  greptime:
+    image: greptime/greptimedb:v1.2.1
+    command: >
+      standalone start --http-addr 0.0.0.0:4000 --rpc-bind-addr 0.0.0.0:4001
+      --mysql-addr 0.0.0.0:4002 --postgres-addr 0.0.0.0:4003
+    ports: ["127.0.0.1:4000:4000", "127.0.0.1:4002:4002"]
+    volumes: ["greptime-data:/greptimedb_data"]
+
+  greprum:
+    image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
+    depends_on: [greptime]
+    ports: ["127.0.0.1:${GREPRUM_PORT:-8080}:8080"]
+    volumes:
+      - greprum-data:/data
+      - ./greprum.toml:/etc/greprum/greprum.toml:ro
+
+volumes:
+  greptime-data:
+  greprum-data:

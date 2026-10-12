@@ -1,0 +1,7 @@
+GrepRUM
+Copyright 2026 The GrepRUM authors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The tracker (tracker/src/t.js) is original code written for this project. No third-party
+tracker source is vendored or copied, and no AGPL-3 code is used.

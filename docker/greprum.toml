@@ -1,0 +1,24 @@
+# Default container config. Mount your own over /etc/greprum/greprum.toml.
+# Environment overrides: GREPRUM_LISTEN, GREPRUM_SPOOL_DIR,
+# GREPRUM_GREPTIME_WRITE_URL, GREPRUM_GREPTIME_READ_URL.
+
+[server]
+listen = "0.0.0.0:8080"
+
+[greptime]
+write_url = "mysql://root@greptime:4002/public"
+
+[spool]
+dir = "/data/spool"
+
+# [[site]]
+# id = "web"
+# key = "pk_replace_me"
+# origins = ["https://www.example.com"]
+# hmac_secret = "replace-with-a-long-random-string"
+# timezone = "Asia/Singapore"
+#
+# [[api_key]]
+# name = "grafana"
+# sha256 = "<output of: greprum hash-key YOUR_KEY>"
+# sites = ["web"]

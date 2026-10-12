@@ -1,0 +1,277 @@
+{
+  "uid": "greprum-overview",
+  "title": "GrepRUM / Overview",
+  "tags": [
+    "greprum",
+    "overview"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Visitors",
+      "type": "stat",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT count(DISTINCT visitor_id) AS visitors FROM visitor_hours WHERE site_id = '${site}' AND $__timeFilter(time_window)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Sessions",
+      "type": "stat",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT coalesce(sum(sessions),0) AS sessions FROM session_starts_1h WHERE site_id = '${site}' AND $__timeFilter(time_window)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Page views",
+      "type": "stat",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT coalesce(sum(views),0) AS page_views FROM page_edges_1h_tbl WHERE site_id = '${site}' AND $__timeFilter(time_window)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "title": "Clicks",
+      "type": "stat",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT coalesce(sum(click_count),0) AS clicks FROM click_stats_1h WHERE site_id = '${site}' AND $__timeFilter(time_window)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "Clicks over time",
+      "type": "timeseries",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT time_window AS time, sum(click_count) AS clicks FROM click_stats_1h WHERE site_id = '${site}' AND $__timeFilter(time_window) GROUP BY time_window ORDER BY time_window"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "Page views over time",
+      "type": "timeseries",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT time_window AS time, sum(views) AS page_views FROM page_edges_1h_tbl WHERE site_id = '${site}' AND $__timeFilter(time_window) GROUP BY time_window ORDER BY time_window"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Visitors per day",
+      "type": "timeseries",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT date_bin('1 day'::INTERVAL, time_window) AS time, count(DISTINCT visitor_id) AS visitors FROM visitor_hours WHERE site_id = '${site}' AND $__timeFilter(time_window) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

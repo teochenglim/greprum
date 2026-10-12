@@ -1,0 +1,15 @@
+{
+  "name": "greprum-tracker",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/",
+    "size": "node size.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5",
+    "jsdom": "26.1.0"
+  }
+}

@@ -1,0 +1,11 @@
+target
+.git
+.github
+node_modules
+tracker/node_modules
+tracker/dist
+spool
+data
+bin
+dist
+*.wal

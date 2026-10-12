@@ -1,0 +1,84 @@
+{
+  "uid": "greprum-events",
+  "title": "GrepRUM / Events",
+  "tags": [
+    "greprum",
+    "events"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      },
+      {
+        "name": "event_name",
+        "label": "Event name",
+        "type": "textbox",
+        "query": "%",
+        "current": {
+          "text": "%",
+          "value": "%"
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Raw events",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 18
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT ts AS time, event_name, session_id, visitor_id, user_id, `path` AS page, el_css AS element, props FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) AND event_name LIKE '${event_name}' ORDER BY ts DESC LIMIT 500"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

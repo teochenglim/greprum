@@ -1,0 +1,102 @@
+{
+  "uid": "greprum-sessions",
+  "title": "GrepRUM / Sessions",
+  "tags": [
+    "greprum",
+    "sessions"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      },
+      {
+        "name": "user_id",
+        "label": "User id",
+        "type": "textbox",
+        "query": "%",
+        "current": {
+          "text": "%",
+          "value": "%"
+        },
+        "options": []
+      },
+      {
+        "name": "country",
+        "label": "Country",
+        "type": "textbox",
+        "query": "%",
+        "current": {
+          "text": "%",
+          "value": "%"
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Which sessions had rage clicks or errors?",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "Click a session id to open the session detail dashboard.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT session_id, min(ts) AS started, count(*) AS events, max(user_id) AS user_id, max(country) AS country, max(device) AS device, max(browser) AS browser, sum(CASE WHEN event_name = '$rage_click' THEN 1 ELSE 0 END) AS rage_clicks, sum(CASE WHEN event_name = '$error' THEN 1 ELSE 0 END) AS errors FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) AND user_id LIKE '${user_id}' AND country LIKE '${country}' GROUP BY session_id ORDER BY started DESC LIMIT 200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "links": [
+            {
+              "title": "Session detail",
+              "url": "/d/greprum-session-detail?var-site=${site}&var-session_id=${__data.fields.session_id}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

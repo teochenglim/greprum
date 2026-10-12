@@ -1,0 +1,183 @@
+{
+  "uid": "greprum-funnels",
+  "title": "GrepRUM / Funnels",
+  "tags": [
+    "greprum",
+    "funnels"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      },
+      {
+        "name": "window_seconds",
+        "label": "window_seconds",
+        "type": "custom",
+        "query": "300,1800,3600,86400",
+        "current": {
+          "text": "1800",
+          "value": "1800"
+        },
+        "options": [
+          {
+            "text": "300",
+            "value": "300",
+            "selected": false
+          },
+          {
+            "text": "1800",
+            "value": "1800",
+            "selected": true
+          },
+          {
+            "text": "3600",
+            "value": "3600",
+            "selected": false
+          },
+          {
+            "text": "86400",
+            "value": "86400",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "name": "step1",
+        "label": "Step 1",
+        "type": "textbox",
+        "query": "$session_start",
+        "current": {
+          "text": "$session_start",
+          "value": "$session_start"
+        },
+        "options": []
+      },
+      {
+        "name": "step2",
+        "label": "Step 2",
+        "type": "textbox",
+        "query": "$pageview",
+        "current": {
+          "text": "$pageview",
+          "value": "$pageview"
+        },
+        "options": []
+      },
+      {
+        "name": "step3",
+        "label": "Step 3",
+        "type": "textbox",
+        "query": "signup",
+        "current": {
+          "text": "signup",
+          "value": "signup"
+        },
+        "options": []
+      },
+      {
+        "name": "step4",
+        "label": "Step 4",
+        "type": "textbox",
+        "query": "paid",
+        "current": {
+          "text": "paid",
+          "value": "paid"
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Signup funnel: where do users drop off?",
+      "type": "barchart",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "Ordered steps per visitor within window_seconds. Choose steps with the step variables.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH s1 AS (SELECT visitor_id, min(ts) AS t1, min(ts) AS tp FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) AND event_name = '${step1}' GROUP BY visitor_id), s2 AS (SELECT a.visitor_id AS visitor_id, a.t1 AS t1, min(e.ts) AS tp FROM s1 a JOIN events e ON e.visitor_id = a.visitor_id WHERE e.site_id = '${site}' AND $__timeFilter(e.ts) AND e.event_name = '${step2}' AND CAST(e.ts AS BIGINT) > CAST(a.tp AS BIGINT) AND CAST(e.ts AS BIGINT) <= CAST(a.t1 AS BIGINT) + ${window_seconds} * 1000 GROUP BY a.visitor_id, a.t1), s3 AS (SELECT a.visitor_id AS visitor_id, a.t1 AS t1, min(e.ts) AS tp FROM s2 a JOIN events e ON e.visitor_id = a.visitor_id WHERE e.site_id = '${site}' AND $__timeFilter(e.ts) AND e.event_name = '${step3}' AND CAST(e.ts AS BIGINT) > CAST(a.tp AS BIGINT) AND CAST(e.ts AS BIGINT) <= CAST(a.t1 AS BIGINT) + ${window_seconds} * 1000 GROUP BY a.visitor_id, a.t1), s4 AS (SELECT a.visitor_id AS visitor_id, a.t1 AS t1, min(e.ts) AS tp FROM s3 a JOIN events e ON e.visitor_id = a.visitor_id WHERE e.site_id = '${site}' AND $__timeFilter(e.ts) AND e.event_name = '${step4}' AND CAST(e.ts AS BIGINT) > CAST(a.tp AS BIGINT) AND CAST(e.ts AS BIGINT) <= CAST(a.t1 AS BIGINT) + ${window_seconds} * 1000 GROUP BY a.visitor_id, a.t1) SELECT 1 AS step, '${step1}' AS event, count(*) AS visitors FROM s1 UNION ALL SELECT 2, '${step2}', count(*) FROM s2 UNION ALL SELECT 3, '${step3}', count(*) FROM s3 UNION ALL SELECT 4, '${step4}', count(*) FROM s4 ORDER BY step"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Funnel steps",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH s1 AS (SELECT visitor_id, min(ts) AS t1, min(ts) AS tp FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) AND event_name = '${step1}' GROUP BY visitor_id), s2 AS (SELECT a.visitor_id AS visitor_id, a.t1 AS t1, min(e.ts) AS tp FROM s1 a JOIN events e ON e.visitor_id = a.visitor_id WHERE e.site_id = '${site}' AND $__timeFilter(e.ts) AND e.event_name = '${step2}' AND CAST(e.ts AS BIGINT) > CAST(a.tp AS BIGINT) AND CAST(e.ts AS BIGINT) <= CAST(a.t1 AS BIGINT) + ${window_seconds} * 1000 GROUP BY a.visitor_id, a.t1), s3 AS (SELECT a.visitor_id AS visitor_id, a.t1 AS t1, min(e.ts) AS tp FROM s2 a JOIN events e ON e.visitor_id = a.visitor_id WHERE e.site_id = '${site}' AND $__timeFilter(e.ts) AND e.event_name = '${step3}' AND CAST(e.ts AS BIGINT) > CAST(a.tp AS BIGINT) AND CAST(e.ts AS BIGINT) <= CAST(a.t1 AS BIGINT) + ${window_seconds} * 1000 GROUP BY a.visitor_id, a.t1), s4 AS (SELECT a.visitor_id AS visitor_id, a.t1 AS t1, min(e.ts) AS tp FROM s3 a JOIN events e ON e.visitor_id = a.visitor_id WHERE e.site_id = '${site}' AND $__timeFilter(e.ts) AND e.event_name = '${step4}' AND CAST(e.ts AS BIGINT) > CAST(a.tp AS BIGINT) AND CAST(e.ts AS BIGINT) <= CAST(a.t1 AS BIGINT) + ${window_seconds} * 1000 GROUP BY a.visitor_id, a.t1) SELECT 1 AS step, '${step1}' AS event, count(*) AS visitors FROM s1 UNION ALL SELECT 2, '${step2}', count(*) FROM s2 UNION ALL SELECT 3, '${step3}', count(*) FROM s3 UNION ALL SELECT 4, '${step4}', count(*) FROM s4 ORDER BY step"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

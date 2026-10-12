@@ -1,0 +1,100 @@
+{
+  "uid": "greprum-retention",
+  "title": "GrepRUM / Retention",
+  "tags": [
+    "greprum",
+    "retention"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      },
+      {
+        "name": "tz_offset_ms",
+        "label": "tz_offset_ms",
+        "type": "custom",
+        "query": "0,28800000,-18000000",
+        "current": {
+          "text": "28800000",
+          "value": "28800000"
+        },
+        "options": [
+          {
+            "text": "0",
+            "value": "0",
+            "selected": false
+          },
+          {
+            "text": "28800000",
+            "value": "28800000",
+            "selected": true
+          },
+          {
+            "text": "-18000000",
+            "value": "-18000000",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Who comes back? (visitors by cohort day and days since first visit)",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT f.cohort_day AS cohort_day_index, v.act_day - f.cohort_day AS day_n, count(DISTINCT f.visitor_id) AS visitors FROM (SELECT visitor_id, CAST(floor((CAST(first_seen_ts AS BIGINT) + ${tz_offset_ms}) / 86400000) AS BIGINT) AS cohort_day FROM first_seen WHERE site_id = '${site}' AND $__timeFilter(first_seen_ts)) f JOIN (SELECT visitor_id, CAST(floor((CAST(time_window AS BIGINT) + ${tz_offset_ms}) / 86400000) AS BIGINT) AS act_day FROM visitor_hours WHERE site_id = '${site}') v ON v.visitor_id = f.visitor_id WHERE v.act_day >= f.cohort_day AND v.act_day - f.cohort_day <= 14 GROUP BY f.cohort_day, day_n ORDER BY f.cohort_day, day_n"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

@@ -1,0 +1,189 @@
+{
+  "BrowsersDevices": {
+    "by": "string",
+    "rows": [
+      {
+        "sessions": "number",
+        "value": "string",
+        "visitors": "number"
+      }
+    ]
+  },
+  "EntryPages": {
+    "pages": [
+      {
+        "new_visitors": "number",
+        "page": "string",
+        "returning_visitors": "number",
+        "sessions": "number",
+        "sessions_scaled": "number"
+      }
+    ]
+  },
+  "Events": {
+    "events": [
+      {
+        "event_name": "string",
+        "page": "string",
+        "seq": "number",
+        "ts": "number"
+      }
+    ],
+    "next_before": "null"
+  },
+  "Funnel": {
+    "steps": [
+      {
+        "conversion_from_previous": "number",
+        "conversion_from_start": "number",
+        "step": "number",
+        "visitors": "number"
+      }
+    ],
+    "window_seconds": "number"
+  },
+  "Journeys": {
+    "transitions": [
+      {
+        "from_page": "string",
+        "to_page": "string",
+        "views": "number",
+        "views_scaled": "number"
+      }
+    ]
+  },
+  "Overview": {
+    "clicks": {
+      "count": "number",
+      "scaled": "number"
+    },
+    "dau": "number",
+    "identified_users": "number",
+    "mau": "number",
+    "pages_per_session": "number",
+    "pageviews": {
+      "count": "number",
+      "scaled": "number"
+    },
+    "previous": {
+      "clicks": {
+        "count": "number",
+        "scaled": "number"
+      },
+      "identified_users": "number",
+      "pageviews": {
+        "count": "number",
+        "scaled": "number"
+      },
+      "sessions": {
+        "count": "number",
+        "scaled": "number"
+      }
+    },
+    "sessions": {
+      "count": "number",
+      "scaled": "number"
+    },
+    "timezone": "string",
+    "visitors": "number",
+    "wau": "number"
+  },
+  "RageClicks": {
+    "elements": [
+      {
+        "clicks": "number",
+        "clicks_scaled": "number",
+        "dead_clicks": "number",
+        "dead_rate": "number",
+        "el_css": "string",
+        "page": "string",
+        "rage_clicks": "number",
+        "rage_rate": "number",
+        "tag": "string",
+        "text": "string"
+      }
+    ]
+  },
+  "Retention": {
+    "cohorts": [
+      {
+        "cohort_day": "number",
+        "date": "string",
+        "rate": {
+          "0": "number"
+        },
+        "retained": {
+          "0": "number"
+        },
+        "size": "number"
+      }
+    ]
+  },
+  "SessionDetail": {
+    "events": [
+      {
+        "event_name": "string",
+        "page": "string",
+        "seq": "number",
+        "ts": "number"
+      }
+    ],
+    "session_id": "string"
+  },
+  "Sessions": {
+    "sessions": [
+      {
+        "browser": "string",
+        "country": "string",
+        "device": "string",
+        "ended_at": "number",
+        "entry_path": "string",
+        "errors": "number",
+        "events": "number",
+        "n": "number",
+        "rage_clicks": "number",
+        "scaled": "number",
+        "session_id": "string",
+        "started_at": "number",
+        "user_id": "string",
+        "visitor_id": "string"
+      }
+    ]
+  },
+  "Timeseries": {
+    "series": [
+      {
+        "count": "number",
+        "scaled": "number",
+        "t": "number"
+      }
+    ]
+  },
+  "TopElements": {
+    "elements": [
+      {
+        "clicks": "number",
+        "clicks_scaled": "number",
+        "dead_clicks": "number",
+        "el_css": "string",
+        "page": "string",
+        "rage_clicks": "number",
+        "tag": "string",
+        "text": "string"
+      }
+    ]
+  },
+  "TopPages": {
+    "pages": [
+      {
+        "clicks": "number",
+        "clicks_scaled": "number",
+        "page": "string",
+        "views": "number",
+        "views_scaled": "number",
+        "visitors": "number"
+      }
+    ]
+  },
+  "Usage": []
+}

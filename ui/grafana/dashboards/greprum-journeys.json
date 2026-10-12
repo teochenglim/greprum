@@ -1,0 +1,84 @@
+{
+  "uid": "greprum-journeys",
+  "title": "GrepRUM / Journeys",
+  "tags": [
+    "greprum",
+    "journeys"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
+        },
+        "query": "SELECT DISTINCT site_id FROM visitor_hours",
+        "refresh": 2,
+        "includeAll": false,
+        "current": {},
+        "sort": 1
+      },
+      {
+        "name": "from_page",
+        "label": "From page",
+        "type": "textbox",
+        "query": "%",
+        "current": {
+          "text": "%",
+          "value": "%"
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Where do people go next? (page transitions)",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "Transitions table; set the from_page variable to focus on one page ('%' = all).",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT parent_path AS from_page, `path` AS to_page, sum(views) AS views FROM page_edges_1h_tbl WHERE site_id = '${site}' AND $__timeFilter(time_window) AND parent_path LIKE '${from_page}' GROUP BY parent_path, `path` ORDER BY views DESC LIMIT 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

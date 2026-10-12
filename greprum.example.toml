@@ -1,0 +1,34 @@
+# Copy to greprum.toml. See docs/ and PRD.md §2, §4, §7 for every setting.
+
+[server]
+listen = "127.0.0.1:8080"          # binds loopback by default; put a reverse proxy in front
+tracker_path = "/t.js"             # serve from your own domain (ad blockers)
+collect_path = "/collect"
+country_header = "cf-ipcountry"    # set by a trusted proxy; the client IP is never stored
+rate_limit_per_min = 600           # per site key
+
+[greptime]
+write_url = "mysql://root@127.0.0.1:4002/public"
+# read_url = "mysql://ro@127.0.0.1:4002/public"   # separate read-only user
+ttl = "13 months"                  # events retention
+# flow_prefix = "prod_"            # flow names are unique per catalog
+
+[spool]
+dir = "./spool"                    # needs a persistent volume
+cap_bytes = 2147483648
+strict_fsync = false               # true: acknowledge only after fsync
+
+[[site]]
+id = "web"
+key = "pk_replace_me"
+origins = ["https://www.example.com"]
+hmac_secret = "replace-with-a-long-random-string"
+timezone = "Asia/Singapore"
+# store_text = true
+# honour_dnt = false
+# drop_attrs = ["data-email"]
+
+[[api_key]]
+name = "grafana"
+sha256 = "<greprum hash-key YOUR_KEY>"
+sites = ["web"]

@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: check (fmt, clippy, tests, tracker tests, size budget, version)
+        run: make check
+
+  integration:
+    name: GreptimeDB integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: make db-up
+      - name: wait for GreptimeDB
+        run: |
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4000/health && exit 0; sleep 2; done; exit 1
+      - run: make test-db
