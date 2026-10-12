@@ -4,19 +4,25 @@ Product analytics and real-user monitoring in **one Rust binary**, on **Greptime
 Clicks, journeys, funnels, retention and sessions without running ClickHouse, Kafka and Postgres.
 Privacy-safe by default: no IP stored, no input values, no query strings.
 
-```
-Browser --t.js--> greprum (axum)  --spool--> drainer --> GreptimeDB (events + Flow rollups)
-                       ^ /api/v1/* ---------------------- read pool <--- Grafana dashboards
-```
+![Architecture](images/architecture.png)
 
 ## Quick start (Docker)
 
 ```bash
-cp greprum.example.toml greprum.toml        # set site key, origins, hmac secret, API key hash
-docker compose up -d                        # GreptimeDB + GrepRUM (ghcr.io/teochenglim/greprum)
-docker compose run --rm greprum migrate --config /etc/greprum/greprum.toml
-curl http://127.0.0.1:8080/healthz          # ok
+git clone https://github.com/teochenglim/greprum && cd greprum
+docker compose up -d                                  # GreptimeDB + GrepRUM + Prometheus + Grafana, tables created
+docker compose --profile demo run --rm seed           # optional: 30 000 demo events (or: make demo)
+open http://127.0.0.1:3000                            # Grafana, folder GrepRUM, Site = demo
 ```
+
+No file to edit: the stack starts with a public demo site (`pk_demo`, API key `demo-api-key`). Your own keys:
+[tutorials/05-going-to-production.md](tutorials/05-going-to-production.md).
+
+![Overview](images/grafana_overview.png)
+
+**Tutorials:** [quickstart](tutorials/01-quickstart.md) · [add the tracker](tutorials/02-add-the-tracker.md) ·
+[read the dashboards](tutorials/03-read-the-dashboards.md) · [your own tools on GreptimeDB](tutorials/04-your-own-tools.md) ·
+[going to production](tutorials/05-going-to-production.md)
 
 Add the tracker to your site (served from your own domain):
 

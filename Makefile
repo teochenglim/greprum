@@ -100,9 +100,9 @@ release-gate: check test-db ## v1.0.0 gate: everything incl. ignored release-gat
 	GREPRUM_TEST_DB=mysql://root@127.0.0.1:4002/public cargo test --locked --test ac_launch -- --ignored
 
 .PHONY: clean
-clean: ## Remove local build artifacts
+clean: ## Remove all local build artifacts (cargo target/, bin/, tracker dist + node_modules)
 	cargo clean
-	rm -rf bin dist tracker/dist
+	rm -rf bin dist tracker/dist tracker/node_modules
 
 .PHONY: smoke
 smoke: build ## End-to-end smoke: gateway up -> /healthz -> /t.js -> /collect 204 (no DB needed)
@@ -115,6 +115,16 @@ IMAGE ?= ghcr.io/teochenglim/greprum
 .PHONY: docker-build
 docker-build: ## Build the container image (tag :$(VERSION_CURRENT))
 	docker build --build-arg VERSION=v$(VERSION_CURRENT) -t $(IMAGE):$(VERSION_CURRENT) -t $(IMAGE):latest .
+
+.PHONY: demo
+demo: ## Whole stack + demo data from the published image (Grafana http://127.0.0.1:3000)
+	docker compose up -d
+	docker compose --profile demo run --rm seed
+	@echo "Grafana: http://127.0.0.1:$${GRAFANA_PORT:-3000}   demo page: python3 -m http.server 8000 -d docker/demo-site"
+
+.PHONY: demo-local
+demo-local: docker-build ## Same as `make demo` with the image built from this checkout
+	GREPRUM_IMAGE=$(IMAGE):$(VERSION_CURRENT) $(MAKE) demo
 
 .PHONY: docker-run
 docker-run: ## Run the image against a local config (./greprum.toml)

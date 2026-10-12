@@ -1,0 +1,8 @@
+flowchart LR
+    B["Browser<br/>t.js tracker"] -->|"POST /collect"| G["greprum :8080<br/>gate, spool, query API"]
+    G -->|"spool, drainer"| D[("GreptimeDB<br/>events + Flow rollups<br/>:4002 MySQL · :4000 HTTP")]
+    G -->|"/metrics"| P["Prometheus :9090"]
+    D -->|"SQL, MySQL protocol"| F["Grafana :3000<br/>11 dashboards"]
+    P --> F
+    G -.->|"/api/v1/*"| T["your tools<br/>curl, BI, notebooks"]
+    D -.->|"MySQL · PostgreSQL · HTTP SQL"| T

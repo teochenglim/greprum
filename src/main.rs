@@ -37,6 +37,9 @@ enum Cmd {
         /// Print the SQL and exit; no database connection.
         #[arg(long)]
         print: bool,
+        /// Keep retrying for up to this many seconds while GreptimeDB starts (compose, CI).
+        #[arg(long, default_value_t = 0)]
+        wait: u64,
     },
     /// Generate synthetic events (spike / load tests).
     Gen {
@@ -141,7 +144,11 @@ async fn main() -> Result<()> {
             }
         }
         Cmd::HashKey { key } => println!("{}", query::hash_key(&key)),
-        Cmd::Migrate { config, print } => {
+        Cmd::Migrate {
+            config,
+            print,
+            wait,
+        } => {
             let cfg = if config.exists() {
                 Config::load(&config)?
             } else {
@@ -152,13 +159,24 @@ async fn main() -> Result<()> {
                     println!("-- {}\n{};\n", s.name, s.sql);
                 }
             } else {
-                for n in migrate::apply(
-                    &cfg.greptime.write_url,
-                    &cfg.greptime.ttl,
-                    &cfg.greptime.flow_prefix,
-                )
-                .await?
-                {
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(wait);
+                let done = loop {
+                    match migrate::apply(
+                        &cfg.greptime.write_url,
+                        &cfg.greptime.ttl,
+                        &cfg.greptime.flow_prefix,
+                    )
+                    .await
+                    {
+                        Ok(done) => break done,
+                        Err(e) if std::time::Instant::now() < deadline => {
+                            eprintln!("database not ready ({e:#}); retrying");
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        }
+                        Err(e) => return Err(e),
+                    }
+                };
+                for n in done {
                     println!("ok  {n}");
                 }
             }

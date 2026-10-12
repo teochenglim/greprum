@@ -129,6 +129,15 @@ Details: [RELEASE/v0.11.2.md](RELEASE/v0.11.2.md)
 
 Details: [RELEASE/v0.11.3.md](RELEASE/v0.11.3.md)
 
+## v0.12.0 — Quickstart and tutorials ✅
+
+- [x] `docker compose up -d` with no edits (demo config, one-shot `migrate --wait`), `make demo` seeds 30 000 events
+- [x] `tutorials/` (5, with the 11 Grafana screenshots): quickstart, tracker, dashboards, own tools on GreptimeDB, production
+- [x] Docker publish split per architecture (native runners + merge); the QEMU build never finished
+- [ ] Green Docker run on the tag; clean-machine first run (user)
+
+Details: [RELEASE/v0.12.0.md](RELEASE/v0.12.0.md)
+
 ## v1.0.0 — Launch hardening 📋
 
 - [x] Embedded UI go/no-go (no-go, ADR 0044), licence Apache-2.0 (ADR 0027), PDPA/erasure docs, contract freeze tests

@@ -1,0 +1,31 @@
+# DEMO configuration for `docker compose up` (no edits needed). Not for production:
+# the site key, HMAC secret and API key below are public. See tutorials/05-going-to-production.md.
+#
+#   site key  : pk_demo
+#   API key   : demo-api-key   (Authorization: Bearer demo-api-key)
+#   demo page : python3 -m http.server 8000 -d docker/demo-site   ->  http://localhost:8000
+
+[server]
+listen = "0.0.0.0:8080"
+
+[greptime]
+write_url = "mysql://root@greptime:4002/public"
+
+[spool]
+dir = "/data/spool"
+
+[jobs]
+enabled = true
+
+[[site]]
+id = "demo"
+key = "pk_demo"
+origins = ["http://localhost:8000", "http://127.0.0.1:8000"]
+hmac_secret = "demo-only-not-a-secret-change-me-before-production"
+timezone = "UTC"
+store_text = true
+
+[[api_key]]
+name = "demo"
+sha256 = "ca6f2e39b2ff141859b18bb5283aadd5093c8ede2869f3656231a054e54bfc22"
+sites = ["demo"]

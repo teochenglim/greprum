@@ -19,6 +19,7 @@ known limitations and the release checklist. Mapping to PRD §10 phases:
 | [v0.11.1](v0.11.1.md) | Patch: browser budget normalised | — | shipped; Real-browser job still red on shared runners | 0.11 |
 | [v0.11.2](v0.11.2.md) | Patch: browser timing test off CI | — | CI has only deterministic gates; `make browser-test` stays a local pre-release check | 0.11.1 |
 | [v0.11.3](v0.11.3.md) | Patch: sustained-load timing gate off CI | — | CI keeps zero-loss and durability checks; the 5 s drain-age gate is `make load-test` on real hardware | 0.11.2 |
+| [v0.12.0](v0.12.0.md) | Quickstart and tutorials | — | zero-edit `docker compose up`, `migrate --wait`, demo seed, `tutorials/` with screenshots, native per-arch Docker build | 0.11.3 |
 | [v1.0.0](v1.0.0.md) | Launch hardening | 6 (decision) | embedded-UI go/no-go, licence (ADR 0027), PDPA review | 0.6 |
 
 ## Per-release workflow

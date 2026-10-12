@@ -97,3 +97,4 @@ Format is parsed by the script: keep `| R-XX | … |` rows and the `AC` ids in r
 | R-O4 | 9, 10 | Grafana (+ Prometheus) ship in the compose stack with dashboards provisioned; product-owner walkthrough recorded |
 | R-O5 | 4, 10 | read-only database user verified; fsync interval and dedup window validated under load |
 | R-O6 | 10 | dependencies are kept current: major upgrades are done deliberately, one at a time, behind the full gate (`make check`, `make test-db`, audit) |
+| R-O7 | 12 | a new user reaches working Grafana dashboards with one command and no edits (compose + migrate + demo data), and tutorials with screenshots stay true to the repository; the container build is split per architecture so a release always finishes |

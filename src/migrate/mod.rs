@@ -253,11 +253,16 @@ pub fn plan_prefixed(ttl: &str, prefix: &str) -> Result<Vec<Stmt>> {
 /// Apply the plan on `url` (MySQL protocol). Idempotent: every statement is `IF NOT EXISTS`.
 pub async fn apply(url: &str, ttl: &str, flow_prefix: &str) -> Result<Vec<&'static str>> {
     use sqlx::Executor;
-    let pool = sqlx::mysql::MySqlPoolOptions::new()
-        .max_connections(1)
-        .connect(url)
-        .await
-        .context("connecting")?;
+    // Fail in seconds, not sqlx's retry-until-30 s: `migrate --wait` retries around this.
+    let pool = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        sqlx::mysql::MySqlPoolOptions::new()
+            .max_connections(1)
+            .connect(url),
+    )
+    .await
+    .map_err(|_| anyhow::anyhow!("timed out connecting"))?
+    .context("connecting")?;
     let mut done = vec![];
     for s in plan_prefixed(ttl, flow_prefix)? {
         // Text protocol: DDL is not prepared.

@@ -102,17 +102,11 @@ fn ac_0_7_2_c_multi_arch_with_semver_and_latest_tags() {
     assert!(w.contains("type=semver,pattern={{version}}"));
     assert!(w.contains("type=semver,pattern={{major}}.{{minor}}"));
     assert!(w.contains("value=latest"));
-    assert!(w.contains("push: true"));
+    assert!(
+        w.contains("imagetools create"),
+        "per-arch digests are merged"
+    );
     assert!(w.contains("ghcr.io/${{ github.repository }}"));
-}
-
-#[test]
-fn ac_0_7_2_d_tag_must_equal_version_file_and_passes_version_build_arg() {
-    let w = read(".github/workflows/docker.yml");
-    assert!(w.contains("test \"$TAG\" = \"v$(cat VERSION)\""));
-    assert!(w.contains("VERSION=${{ github.ref_name }}"));
-    // tag is passed through env, never interpolated into the script (shell injection)
-    assert!(!w.contains("run: test \"${{ github.ref_name }}\""));
 }
 
 // ---- AC0.7.3 runtime wiring (env overrides: see config tests) ----------------

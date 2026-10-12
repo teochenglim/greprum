@@ -1,7 +1,7 @@
 # Local stack: GreptimeDB + GrepRUM + Prometheus + Grafana (dashboards provisioned).
-#   cp greprum.example.toml greprum.toml        # set a site, an API key hash
-#   docker compose up -d
-#   docker compose run --rm greprum migrate --config /etc/greprum/greprum.toml
+#   docker compose up -d                          # zero edits: demo site `pk_demo`, tables created by `migrate`
+#   docker compose --profile demo run --rm seed   # optional: 30 000 synthetic events, 7 days
+# Own config: GREPRUM_CONFIG=./greprum.toml docker compose up -d   (tutorials/05-going-to-production.md)
 # Grafana: http://127.0.0.1:3000 (anonymous viewer; admin/admin to edit). Override host ports with
 # GREPRUM_PORT, GREPTIME_HTTP_PORT, GREPTIME_MYSQL_PORT, GRAFANA_PORT, PROMETHEUS_PORT.
 services:
@@ -15,13 +15,33 @@ services:
       - "127.0.0.1:${GREPTIME_MYSQL_PORT:-4002}:4002"
     volumes: ["greptime-data:/greptimedb_data"]
 
+  # One-shot: creates the events table and Flow rollups (idempotent), waiting for GreptimeDB.
+  migrate:
+    image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
+    command: ["migrate", "--config", "/etc/greprum/greprum.toml", "--wait", "90"]
+    depends_on: [greptime]
+    restart: "no"
+    volumes:
+      - ${GREPRUM_CONFIG:-./docker/quickstart.toml}:/etc/greprum/greprum.toml:ro
+
   greprum:
     image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
-    depends_on: [greptime]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     ports: ["127.0.0.1:${GREPRUM_PORT:-8080}:8080"]
     volumes:
       - greprum-data:/data
-      - ./greprum.toml:/etc/greprum/greprum.toml:ro
+      - ${GREPRUM_CONFIG:-./docker/quickstart.toml}:/etc/greprum/greprum.toml:ro
+
+  # `docker compose --profile demo run --rm seed`: deterministic demo data for site `demo`.
+  seed:
+    profiles: ["demo"]
+    image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
+    command: ["gen", "--url", "mysql://root@greptime:4002/public", "--site", "demo", "--events", "30000", "--days", "7", "--seed", "7"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   prometheus:
     image: prom/prometheus:v3.5.0
