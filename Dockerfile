@@ -5,7 +5,7 @@
 #   docker run -p 8080:8080 -v greprum-data:/data -v ./greprum.toml:/etc/greprum/greprum.toml:ro greprum
 
 # ---- tracker: node builds + minifies t.js, size budget enforced ---------------
-FROM node:22-alpine AS tracker
+FROM node:26-alpine AS tracker
 WORKDIR /src
 COPY tracker ./tracker
 RUN cd tracker && npm ci --no-audit --no-fund \
