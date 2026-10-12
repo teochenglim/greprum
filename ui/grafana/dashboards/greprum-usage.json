@@ -68,7 +68,7 @@
     },
     {
       "id": 2,
-      "title": "Accepted, rejected, dropped (gateway)",
+      "title": "Accepted, rejected, dropped per day (gateway counters)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -88,17 +88,18 @@
             "type": "prometheus",
             "uid": "greprum-prometheus"
           },
-          "format": "time_series",
-          "rawQuery": true,
-          "editorMode": "code",
-          "rawSql": "sum by (kind) (increase(greprum_site_events_total{site=\"${site}\"}[1d]))"
+          "expr": "sum by (day, kind) (greprum_site_events_total{site=\"${site}\"})",
+          "range": true,
+          "instant": false
         }
       ],
       "fieldConfig": {
         "defaults": {},
         "overrides": []
       },
-      "options": {}
+      "options": {},
+      "timeFrom": "6h",
+      "hideTimeOverride": false
     },
     {
       "id": 3,
@@ -122,21 +123,22 @@
             "type": "prometheus",
             "uid": "greprum-prometheus"
           },
-          "format": "time_series",
-          "rawQuery": true,
-          "editorMode": "code",
-          "rawSql": "greprum_oldest_unwritten_event_age_ms / 1000"
+          "expr": "greprum_oldest_unwritten_event_age_ms / 1000",
+          "range": true,
+          "instant": false
         }
       ],
       "fieldConfig": {
         "defaults": {},
         "overrides": []
       },
-      "options": {}
+      "options": {},
+      "timeFrom": "6h",
+      "hideTimeOverride": false
     },
     {
       "id": 4,
-      "title": "Shed and dropped by reason",
+      "title": "Dropped by reason (gateway counters)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -156,17 +158,18 @@
             "type": "prometheus",
             "uid": "greprum-prometheus"
           },
-          "format": "time_series",
-          "rawQuery": true,
-          "editorMode": "code",
-          "rawSql": "sum by (class) (increase(greprum_shed_total[1h]))"
+          "expr": "sum by (reason) (greprum_dropped_total)",
+          "range": true,
+          "instant": false
         }
       ],
       "fieldConfig": {
         "defaults": {},
         "overrides": []
       },
-      "options": {}
+      "options": {},
+      "timeFrom": "6h",
+      "hideTimeOverride": false
     }
   ],
   "annotations": {

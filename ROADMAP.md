@@ -73,30 +73,41 @@ Details: [RELEASE/v0.6.0.md](RELEASE/v0.6.0.md)
 
 Details: [RELEASE/v0.7.0.md](RELEASE/v0.7.0.md)
 
-## v0.8.0 — Jobs wired 📋
+## v0.8.0 — Jobs wired ✅
 
-- [ ] First-seen job scheduled in `serve` (retention works without manual SQL)
-- [ ] Hourly reconcile sets the loss and duplicate-rate gauges (shed subtracted)
-- [ ] `greprum jobs run-once`, job metrics
+- [x] First-seen job scheduled in `serve` (retention works without manual SQL)
+- [x] Hourly reconcile sets the loss and duplicate-rate gauges (shed subtracted)
+- [x] `greprum jobs run-once`, job metrics
+- [x] CI fix folded in: tracker deps installed with `npm ci`, retired macOS runner replaced (the `v0.7.0` tag build failed on a clean checkout)
 
 Details: [RELEASE/v0.8.0.md](RELEASE/v0.8.0.md)
 
-## v0.9.0 — PRD completeness 📋
+## v0.9.0 — PRD completeness ✅
 
-- [ ] Configurable rage thresholds and ignore text; INP tested
-- [ ] Route templates; optional GeoIP database; identity token TTL cap
-- [ ] Overview: this week against last
+- [x] Configurable rage thresholds and ignore text; INP tested
+- [x] Route templates; optional GeoIP database; identity token TTL cap
+- [x] Overview: this week against last
 
 Details: [RELEASE/v0.9.0.md](RELEASE/v0.9.0.md)
 
-## v0.10.0 — Operational proof & supply chain 📋
+## v0.10.0 — Operational proof & supply chain ✅ (read-only-user run pending)
 
-- [ ] `kill -9` and real 10-minute outage tests; soak on the real process
-- [ ] Real-browser main-thread budget on a demo page
-- [ ] Grafana + Prometheus in compose, screenshots, product-owner walkthrough
-- [ ] Actions pinned by SHA, `cargo audit`/`deny`; read-only DB user and fsync/dedup ADRs closed
+- [x] `kill -9` (20 rounds) and real 10-minute outage: nothing acknowledged lost
+- [x] Real-browser main-thread budget on a demo page
+- [x] Grafana + Prometheus in compose, 11 screenshots (`images/`), product-owner walkthrough
+- [x] Actions pinned by SHA, `cargo audit`/`deny`, Dependabot; sustained-load and fsync/dedup ADRs closed
+- [ ] `make ro-user-test` (read-only DB user) executed
+- [x] CI fixes folded in: Node 22 test globs, audit ignore (ADR 0051), `test-db` split, tamed Dependabot, `scripts/release.sh`
 
 Details: [RELEASE/v0.10.0.md](RELEASE/v0.10.0.md)
+
+## v0.11.0 — Dependency upgrades 📋
+
+- [ ] axum 0.8 + tower-http 0.7, sqlx 0.9, jsonwebtoken 11 (one commit each, full gate between)
+- [ ] Tracker toolchain (esbuild, jsdom, playwright-core); GitHub Action majors re-pinned
+- [ ] Re-check ADR 0051 (does sqlx 0.9 still pull `rsa`?)
+
+Details: [RELEASE/v0.11.0.md](RELEASE/v0.11.0.md)
 
 ## v1.0.0 — Launch hardening 📋
 

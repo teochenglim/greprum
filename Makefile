@@ -16,8 +16,13 @@ help: ## Show this menu
 
 ## --- develop -----------------------------------------------------------
 
+# Locked tracker dev dependencies (esbuild, jsdom). CI and clean checkouts have no node_modules.
+tracker/node_modules: tracker/package.json tracker/package-lock.json
+	cd tracker && npm ci --no-audit --no-fund
+	@touch tracker/node_modules
+
 .PHONY: tracker
-tracker: ## Build + minify tracker/dist/t.js (embedded into the binary)
+tracker: tracker/node_modules ## Build + minify tracker/dist/t.js (embedded into the binary)
 	node tracker/build.mjs
 
 .PHONY: build
@@ -35,11 +40,29 @@ test: tracker ## Run the Rust test suite (unit + AC tests, no DB needed)
 
 .PHONY: test-db
 test-db: tracker ## Integration tests against a live GreptimeDB (run `make db-up` first)
-	GREPRUM_TEST_DB=mysql://root@127.0.0.1:4002/public cargo test --locked -- --ignored --test-threads=1
+	GREPRUM_TEST_DB=mysql://root@127.0.0.1:4002/public cargo test --locked --no-fail-fast -- --ignored --test-threads=1 \
+	  --skip live_grafana_lists --skip read_only_user_can_read
+
+.PHONY: outage-test
+outage-test: ## Real DB outage: pause the docker GreptimeDB for SECS (default 600) while ingesting
+	GREPRUM_TEST_DB=mysql://root@127.0.0.1:4002/public GREPRUM_OUTAGE_SECS=$(or $(SECS),600) \
+	  GREPRUM_DB_CONTAINER=$(GREPTIME_NAME) cargo test --locked --test ac_ops ac_0_10_2 -- --ignored --nocapture
+
+.PHONY: stack-test
+stack-test: ## Live compose-stack test (Grafana + Prometheus up: `docker compose up -d`; set GRAFANA_PORT/PROMETHEUS_PORT)
+	cargo test --locked --test ac_dashboards_ops -- --ignored --nocapture
+
+.PHONY: ro-user-test
+ro-user-test: ## Prove a read-only GreptimeDB user cannot write (throwaway docker GreptimeDB with auth)
+	./scripts/ro-user-test.sh
 
 .PHONY: tracker-test
-tracker-test: ## Tracker behaviour tests (node --test, jsdom)
-	cd tracker && npm install --no-audit --no-fund --silent && node --test test/
+tracker-test: tracker/node_modules tracker ## Tracker behaviour tests (node --test, jsdom)
+	cd tracker && node --test test/*.test.mjs
+
+.PHONY: browser-test
+browser-test: tracker tracker/node_modules ## Real-browser main-thread budget (system Chrome; CHROME_PATH to override)
+	cd tracker && node --test browser/*.test.mjs
 
 .PHONY: tracker-size
 tracker-size: tracker ## Enforce tracker gzip size budget (core 3 KB, total 5 KB)
@@ -114,9 +137,8 @@ db-down: ## Stop and remove the local GreptimeDB
 ## --- supply-chain hardening ----------------------------------------------
 
 .PHONY: github-action-bump
-github-action-bump: ## Pin .github/workflows/*.yml actions to latest release, full commit SHA (uses pinact)
-	go run github.com/suzuki-shunsuke/pinact/cmd/pinact@latest run --update
-	go run github.com/suzuki-shunsuke/pinact/cmd/pinact@latest run --verify
+github-action-bump: ## Pin .github/workflows/*.yml actions to the newest release of the same major, as full commit SHAs
+	python3 scripts/pin-actions.py
 	@echo "Actions bumped and verified. Review the diff, then run 'make check' before committing."
 
 .PHONY: audit
@@ -144,12 +166,5 @@ bump: ## Rewrite VERSION and Cargo.toml with the new version (VERSION=x.y.z requ
 	@echo "VERSION -> $(VERSION)"
 
 .PHONY: release
-release: ## Bump VERSION, push HEAD, tag, push the tag - triggers GitHub Actions (VERSION=x.y.z required)
-	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=x.y.z"; exit 1; fi
-	$(MAKE) bump VERSION=$(VERSION)
-	git add VERSION Cargo.toml Cargo.lock
-	git commit --amend --no-edit
-	git push origin HEAD
-	git tag v$(VERSION)
-	git push origin v$(VERSION)
-	@echo "Released v$(VERSION) - GitHub Actions will build and publish."
+release: ## Commit first, then: validate, bump VERSION, amend into HEAD, push, tag, push tag (VERSION=x.y.z; DRY_RUN=1 to rehearse)
+	@./scripts/release.sh "$(VERSION)"

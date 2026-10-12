@@ -1,6 +1,6 @@
 # ADR 0040 — Grafana funnel and drill-down
 
-Status: Open
+Status: Accepted
 Spike: spike-item-11
 
 ## Context
@@ -9,8 +9,8 @@ Spike item 11: can Grafana give a usable funnel and session drill-down?
 
 ## Decision
 
-Decided in v0.6.0 with the gap analysis. Funnel steps via dashboard variables and a table data link for `session_id` are the planned approach.
+Grafana covers the funnel (step variables + window), the session drill-down (table data link plus a newest-session default) and journeys as a transitions table. Verified by rendering all 11 dashboards in Grafana 11.6 on seeded data (`images/grafana_*.png`) and by clicking through from Sessions to Session detail.
 
 ## Consequences
 
-Embedded UI go/no-go is recorded in v1.0.0.
+The journey diagram remains the only gap (ADR 0044). Bugs found only by looking at the rendered output (and fixed): NULL columns hid every session, retention showed raw day indexes, the funnel chart plotted the step number, Prometheus panels used the wrong target field.

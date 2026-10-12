@@ -4,6 +4,7 @@ use greprum::{
     VERSION,
     collect::{self, RequestInfo},
     config::Config,
+    jobs,
     metrics::Metrics,
     migrate,
     query::{self, Reader as _, SqlxReader},
@@ -64,6 +65,11 @@ enum Cmd {
         #[arg(long, default_value_t = 7)]
         days: i64,
     },
+    /// Run a background job once (same code path as the scheduler).
+    Jobs {
+        #[command(subcommand)]
+        action: JobsCmd,
+    },
     /// Print the SHA-256 hex of an API key for `[[api_key]].sha256`.
     HashKey { key: String },
     /// Probe `/healthz` (used by the container HEALTHCHECK).
@@ -74,6 +80,22 @@ enum Cmd {
     },
     /// Print the version.
     Version,
+}
+
+#[derive(Subcommand)]
+enum JobsCmd {
+    RunOnce {
+        /// first-seen | reconcile
+        #[arg(long)]
+        job: String,
+        #[arg(long)]
+        site: Option<String>,
+        #[arg(long, default_value = "greprum.toml")]
+        config: PathBuf,
+        /// Print the SQL and exit; no database connection.
+        #[arg(long)]
+        print: bool,
+    },
 }
 
 fn init_tracing() {
@@ -92,6 +114,31 @@ async fn main() -> Result<()> {
                 .or_else(|| std::env::var("GREPRUM_LISTEN").ok())
                 .unwrap_or_else(|| "127.0.0.1:8080".into());
             greprum::health::check(&greprum::health::probe_addr(&listen)).await?;
+        }
+        Cmd::Jobs {
+            action:
+                JobsCmd::RunOnce {
+                    job,
+                    site,
+                    config,
+                    print,
+                },
+        } => {
+            let job = jobs::JobName::parse(&job)?;
+            if print {
+                println!("{}", job.sql());
+                return Ok(());
+            }
+            let cfg = Config::load(&config)?;
+            let runner = jobs::SqlJobs::lazy(&cfg.greptime.write_url)?;
+            let sites: Vec<String> = match site {
+                Some(s) => vec![s],
+                None => cfg.sites.iter().map(|s| s.id.clone()).collect(),
+            };
+            for s in sites {
+                let v = jobs::run_once(&runner, job, &s, server::system_clock()()).await?;
+                println!("{v}");
+            }
         }
         Cmd::HashKey { key } => println!("{}", query::hash_key(&key)),
         Cmd::Migrate { config, print } => {
@@ -152,6 +199,24 @@ async fn serve(cfg: Config) -> Result<()> {
     let drainer = Drainer::new(spool.clone(), sink, cfg.ingest.clone(), metrics.clone());
     tokio::spawn(drainer.run(stop.clone()));
 
+    if cfg.jobs.enabled && !cfg.sites.is_empty() {
+        let runner: Arc<dyn jobs::JobRunner> =
+            Arc::new(jobs::SqlJobs::lazy(&cfg.greptime.write_url)?);
+        let sched = jobs::Scheduler::new(
+            runner,
+            cfg.sites.iter().map(|s| s.id.clone()).collect(),
+            cfg.jobs.first_seen_secs,
+            cfg.jobs.reconcile_secs,
+            metrics.clone(),
+        );
+        tokio::spawn(async move {
+            loop {
+                sched.tick(server::system_clock()()).await;
+                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            }
+        });
+    }
+
     let m2 = metrics.clone();
     let d2 = dir.clone();
     tokio::spawn(async move {
@@ -171,11 +236,14 @@ async fn serve(cfg: Config) -> Result<()> {
     let app = server::router(state);
     let listener = tokio::net::TcpListener::bind(&cfg.server.listen).await?;
     tracing::info!("greprum {VERSION} listening on {}", cfg.server.listen);
-    axum::serve(listener, app)
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-        })
-        .await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(async {
+        let _ = tokio::signal::ctrl_c().await;
+    })
+    .await?;
     stop.store(true, std::sync::atomic::Ordering::Relaxed);
     let _ = server::save_usage(&dir, &metrics);
     Ok(())
@@ -201,6 +269,7 @@ async fn gen_events(
         drop_attrs: vec![],
         store_text: true,
         honour_dnt: false,
+        ..Default::default()
     };
     let ingest = greprum::config::IngestConfig::default();
     let sink = match &url {
@@ -254,6 +323,7 @@ async fn spike_run(url: &str, site: &str, runs: usize, days: i64) -> Result<()> 
         drop_attrs: vec![],
         store_text: true,
         honour_dnt: false,
+        ..Default::default()
     };
     let mk = |kind: Kind, extra: &[(&str, &str)], span_days: i64| -> Result<build::Params> {
         let mut q: HashMap<String, String> = extra

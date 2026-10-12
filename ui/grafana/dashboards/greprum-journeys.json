@@ -68,7 +68,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT parent_path AS from_page, `path` AS to_page, sum(views) AS views FROM page_edges_1h_tbl WHERE site_id = '${site}' AND $__timeFilter(time_window) AND parent_path LIKE '${from_page}' GROUP BY parent_path, `path` ORDER BY views DESC LIMIT 100"
+          "rawSql": "SELECT parent_path AS from_page, `path` AS to_page, sum(views) AS views FROM page_edges_1h_tbl WHERE site_id = '${site}' AND $__timeFilter(time_window) AND coalesce(parent_path, '') LIKE '${from_page}' GROUP BY parent_path, `path` ORDER BY views DESC LIMIT 100"
         }
       ],
       "fieldConfig": {

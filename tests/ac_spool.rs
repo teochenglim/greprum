@@ -499,3 +499,29 @@ async fn ac_0_4_12_h_unreachable_database_is_a_transient_error_never_fatal() {
     let r = sink.write(&[event("a", 0)]).await;
     assert!(matches!(r, Err(SinkError::Transient(_))), "{r:?}");
 }
+
+#[tokio::test]
+async fn ac_0_4_12_i_lagging_fresh_lane_hands_its_backlog_to_the_backfill_lane() {
+    let dir = tempfile::tempdir().unwrap();
+    let (sp, m) = open(dir.path(), spool_cfg());
+    // 3 000 events received 10 s ago: further behind than fresh_lag_secs (5 s).
+    for i in 0..60 {
+        sp.append(&batch("a", i * 50, 50, T0)).await.unwrap();
+    }
+    let sink = MemorySink::new();
+    let mut d = drainer(&sp, &sink, &m, IngestConfig::default());
+    assert!(!d.maybe_demote_lagging(T0 + 4_000), "within the lag budget");
+    assert!(d.maybe_demote_lagging(T0 + 10_000), "10 s behind");
+    assert_eq!(d.checkpoint().backfill.len(), 1);
+    // New events are written by the fresh lane first, then the backlog in big inserts.
+    sp.append(&batch("new", 0, 5, T0 + 10_000)).await.unwrap();
+    use greprum::spool::drainer::Step;
+    assert_eq!(d.step_fresh().await, Step::Wrote(5));
+    assert_eq!(sink.snapshot()[0].session_id, "new");
+    drain_all(&mut d).await;
+    assert_eq!(sink.len(), 3005);
+    assert!(
+        sink.max_batch.load(SeqCst) > 500,
+        "backlog drained with larger inserts"
+    );
+}

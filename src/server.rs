@@ -44,6 +44,7 @@ pub struct AppState {
     pub clock: Clock,
     pub reader: Option<Arc<dyn crate::query::Reader>>,
     pub tracker_hash: String,
+    pub geoip: Option<Arc<crate::geoip::GeoIp>>,
 }
 
 impl AppState {
@@ -55,6 +56,20 @@ impl AppState {
         clock: Clock,
     ) -> Arc<AppState> {
         let hash = hex::encode(&Sha256::digest(TRACKER_JS)[..8]);
+        let geoip = if cfg.geoip.database.is_empty() {
+            None
+        } else {
+            match crate::geoip::GeoIp::open(&cfg.geoip.database) {
+                Ok(g) => Some(Arc::new(g)),
+                Err(e) => {
+                    tracing::warn!(
+                        "geoip database {} unusable, header country only: {e}",
+                        cfg.geoip.database
+                    );
+                    None
+                }
+            }
+        };
         let dedup = Dedup::new(
             Duration::from_secs(cfg.ingest.dedup_secs),
             cfg.ingest.dedup_max_entries,
@@ -68,6 +83,7 @@ impl AppState {
             clock,
             reader,
             tracker_hash: hash,
+            geoip,
         })
     }
 
@@ -257,9 +273,27 @@ async fn collect_handler(
             .unwrap_or("")
             .to_string()
     };
+    // Country: a trusted proxy's header wins; otherwise an optional GeoIP lookup. The IP is
+    // looked up and dropped here: it is not part of RequestInfo, spool frames or logs.
+    let mut country = hdr(&s.cfg.server.country_header);
+    if country.is_empty()
+        && let Some(g) = &s.geoip
+    {
+        let ip = if s.cfg.server.ip_header.is_empty() {
+            parts
+                .extensions
+                .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
+                .map(|c| c.0.ip())
+        } else {
+            crate::geoip::first_ip(&hdr(&s.cfg.server.ip_header))
+        };
+        if let Some(ip) = ip {
+            country = g.country(ip);
+        }
+    }
     let info = RequestInfo {
         user_agent: hdr("user-agent"),
-        country: hdr(&s.cfg.server.country_header),
+        country,
         dnt: hdr("dnt") == "1" || hdr("sec-gpc") == "1",
     };
     let day = day_of(now);

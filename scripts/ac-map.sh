@@ -36,7 +36,7 @@ count_tests() { # $1 = AC id e.g. AC0.4.3
   pre="ac_$(echo "${id#AC}" | tr . _)_"
   {
     grep -rhoE "fn ${pre}[a-z0-9_]+" src tests 2>/dev/null | sed "s/^fn //" || true| sed 's/^fn //'
-    grep -rhE "(it|test)\(['\"]${id}[ :.]" tracker/test 2>/dev/null | sed "s/^fn //" || true| sed -E "s/^.*(it|test)\(['\"]([^'\"]*)['\"].*/\2/"
+    grep -rhE "(it|test)\(['\"]${id}[ :.]" tracker/test tracker/browser 2>/dev/null | sed "s/^fn //" || true| sed -E "s/^.*(it|test)\(['\"]([^'\"]*)['\"].*/\2/"
   } | sort -u | wc -l | tr -d ' '
 }
 total=0; bad=0

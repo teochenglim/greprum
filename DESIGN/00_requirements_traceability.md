@@ -96,3 +96,4 @@ Format is parsed by the script: keep `| R-XX | … |` rows and the `AC` ids in r
 | R-O3 | 10 | CI actions pinned by commit SHA; dependency audit runs in CI |
 | R-O4 | 9, 10 | Grafana (+ Prometheus) ship in the compose stack with dashboards provisioned; product-owner walkthrough recorded |
 | R-O5 | 4, 10 | read-only database user verified; fsync interval and dedup window validated under load |
+| R-O6 | 10 | dependencies are kept current: major upgrades are done deliberately, one at a time, behind the full gate (`make check`, `make test-db`, audit) |

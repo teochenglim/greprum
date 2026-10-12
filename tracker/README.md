@@ -19,6 +19,8 @@ Core (page views, session start, SPA routes, clicks, `track()`, batching) ≤ 3 
 | `data-env`, `data-release` | copied to every batch |
 | `data-endpoint` | collect URL; default `<script origin>/collect` |
 | `data-auto-pageview="false"` | disable automatic page views (use `greprum.page()`) |
+| `data-rage-count`, `data-rage-px`, `data-rage-ms` | rage-click burst: clicks (3), radius in px (30), window in ms (1000) |
+| `data-rage-ignore` | comma list of button texts / aria-labels never counted (default `next,previous,prev,>,<,+,-`) |
 | `data-capture="all"` | record every click, not only allowlisted elements |
 | `data-consent="required"` | store and send nothing until `greprum.consent("granted")` |
 | `data-respect-dnt="true"` | disable when Do Not Track is on |

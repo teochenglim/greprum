@@ -1,0 +1,6 @@
+# Accepted advisories. Every entry needs an ADR (docs/adr) and a revisit trigger.
+[advisories]
+ignore = [
+  # rsa 0.9.10 via sqlx-mysql: no patched release exists. Not reachable in our use, see ADR 0051.
+  "RUSTSEC-2023-0071",
+]

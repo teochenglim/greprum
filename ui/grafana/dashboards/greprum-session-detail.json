@@ -31,14 +31,18 @@
       },
       {
         "name": "session_id",
-        "label": "Session id",
-        "type": "textbox",
-        "query": "",
-        "current": {
-          "text": "",
-          "value": ""
+        "label": "Session",
+        "type": "query",
+        "datasource": {
+          "type": "mysql",
+          "uid": "greprum-greptime"
         },
-        "options": []
+        "query": "SELECT session_id FROM (SELECT session_id, max(ts) AS last_ts FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) GROUP BY session_id ORDER BY last_ts DESC LIMIT 200) t ORDER BY last_ts DESC",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "current": {},
+        "sort": 0
       }
     ]
   },

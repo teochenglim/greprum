@@ -3,6 +3,7 @@
 
 pub mod collect;
 pub mod config;
+pub mod geoip;
 pub mod health;
 pub mod jobs;
 pub mod metrics;
