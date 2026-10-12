@@ -21,7 +21,7 @@ rand = "0.8"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sha2 = "0.11.0"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "mysql", "chrono", "bigdecimal"] }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "mysql", "chrono", "bigdecimal"] }
 thiserror = "2.0.21"
 tokio = { version = "1.53.2", features = ["full"] }
 toml = "1.1.8"
