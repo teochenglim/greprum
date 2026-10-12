@@ -7,6 +7,7 @@ Docs: `PRD.md` = requirements · `ROADMAP.md` = plan · `RELEASE/vX.Y.Z.md` = re
 ## Commands
 
 - `make check` (= `fmt-check` + `clippy` + `test` + `tracker-test`) — must pass before claiming anything works. ACs live as `ac<n>_*` tests; new AC ⇒ new test + row in `RELEASE/vX.Y.Z.md`.
+- `make browser-test` — real-Chrome main-thread budget; run on real hardware before a release, **not in CI** (timing on shared runners is noise).
 - `make build`, `make smoke`, `make db-up` (GreptimeDB in docker), `make test-db` (integration, needs `db-up`).
 - `make release VERSION=x.y.z` — user only (see below).
 
