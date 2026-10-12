@@ -109,6 +109,13 @@ Details: [RELEASE/v0.10.0.md](RELEASE/v0.10.0.md)
 
 Details: [RELEASE/v0.11.0.md](RELEASE/v0.11.0.md)
 
+## v0.11.1 — Patch: browser budget on slow CI ✅
+
+- [x] Real-browser main-thread budget measured from `max(t0, responseEnd)` and normalised by a CPU calibration
+- [ ] Green CI/Release/Docker run on the tag (user)
+
+Details: [RELEASE/v0.11.1.md](RELEASE/v0.11.1.md)
+
 ## v1.0.0 — Launch hardening 📋
 
 - [x] Embedded UI go/no-go (no-go, ADR 0044), licence Apache-2.0 (ADR 0027), PDPA/erasure docs, contract freeze tests

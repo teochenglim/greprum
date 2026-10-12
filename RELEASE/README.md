@@ -16,6 +16,7 @@ known limitations and the release checklist. Mapping to PRD §10 phases:
 | [v0.9.0](v0.9.0.md) | PRD completeness | 3/4/5/9/11 (gap) | configurable rage, INP test, route templates, GeoIP, token TTL cap, week-vs-week | 0.8 |
 | [v0.10.0](v0.10.0.md) | Operational proof & supply chain | 7/10 (gap) | kill -9 and real outage, real browser, Grafana in compose, SHA pins + audit | 0.9 |
 | [v0.11.0](v0.11.0.md) | Dependency upgrades | — | axum 0.8, sqlx 0.9, jsonwebtoken 11, tracker toolchain, action majors; audit green | 0.10 |
+| [v0.11.1](v0.11.1.md) | Patch: browser budget on slow CI | — | Real-browser job green on a shared runner | 0.11 |
 | [v1.0.0](v1.0.0.md) | Launch hardening | 6 (decision) | embedded-UI go/no-go, licence (ADR 0027), PDPA review | 0.6 |
 
 ## Per-release workflow
