@@ -41,7 +41,11 @@ test: tracker ## Run the Rust test suite (unit + AC tests, no DB needed)
 .PHONY: test-db
 test-db: tracker ## Integration tests against a live GreptimeDB (run `make db-up` first)
 	GREPRUM_TEST_DB=mysql://root@127.0.0.1:4002/public cargo test --locked --no-fail-fast -- --ignored --test-threads=1 \
-	  --skip live_grafana_lists --skip read_only_user_can_read
+	  --skip live_grafana_lists --skip read_only_user_can_read --skip sustained_load
+
+.PHONY: load-test
+load-test: ## Sustained-load drain-age gate (AC0.10.7b): wall-clock, run on real hardware, not on shared CI
+	GREPRUM_TEST_DB=mysql://root@127.0.0.1:4002/public cargo test --locked --test ac_ops sustained_load -- --ignored --nocapture
 
 .PHONY: outage-test
 outage-test: ## Real DB outage: pause the docker GreptimeDB for SECS (default 600) while ingesting

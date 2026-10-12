@@ -122,6 +122,13 @@ Details: [RELEASE/v0.11.1.md](RELEASE/v0.11.1.md)
 
 Details: [RELEASE/v0.11.2.md](RELEASE/v0.11.2.md)
 
+## v0.11.3 — Patch: sustained-load timing gate off CI ✅
+
+- [x] AC0.10.7b drain-age gate (5 s) moved from `make test-db` to `make load-test`; CI still runs kill -9, outage and zero-loss tests
+- [ ] Green CI/Release/Docker run on the tag (user)
+
+Details: [RELEASE/v0.11.3.md](RELEASE/v0.11.3.md)
+
 ## v1.0.0 — Launch hardening 📋
 
 - [x] Embedded UI go/no-go (no-go, ADR 0044), licence Apache-2.0 (ADR 0027), PDPA/erasure docs, contract freeze tests
