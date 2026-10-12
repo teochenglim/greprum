@@ -11,6 +11,6 @@
   "devDependencies": {
     "esbuild": "0.25.5",
     "jsdom": "26.1.0",
-    "playwright-core": "^1.55.0"
+    "playwright-core": "^1.64.0"
   }
 }
