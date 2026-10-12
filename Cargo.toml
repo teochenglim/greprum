@@ -15,7 +15,7 @@ chrono-tz = "0.10.4"
 clap = { version = "4", features = ["derive"] }
 crc32fast = "1.5.2"
 hex = "0.4.3"
-jsonwebtoken = "9"
+jsonwebtoken = "11"
 maxminddb = "0.32.0"
 rand = "0.8"
 serde = { version = "1.0.229", features = ["derive"] }
