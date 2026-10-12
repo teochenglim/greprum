@@ -6,10 +6,6 @@ all-features = false
 [advisories]
 version = 2
 yanked = "deny"
-ignore = [
-  # rsa 0.9.10 via sqlx-mysql, no patched release; not reachable in our use (ADR 0051).
-  { id = "RUSTSEC-2023-0071", reason = "rsa is only pulled in by sqlx-mysql; see docs/adr/0051" },
-]
 
 [licenses]
 version = 2

@@ -60,7 +60,8 @@ fn ac_0_10_6_b_ci_runs_cargo_audit_and_cargo_deny() {
 }
 
 #[test]
-fn ac_0_10_6_c_deny_config_and_dependabot_cover_cargo_npm_actions_docker() {
+fn ac_0_10_6_c_deny_config_covers_advisories_licences_bans_sources_and_no_update_bot_is_configured()
+{
     let d = read("deny.toml");
     for s in [
         "[advisories]",
@@ -72,42 +73,53 @@ fn ac_0_10_6_c_deny_config_and_dependabot_cover_cargo_npm_actions_docker() {
     ] {
         assert!(d.contains(s), "{s}");
     }
-    let b = read(".github/dependabot.yml");
-    for e in ["cargo", "npm", "github-actions", "docker"] {
-        assert!(b.contains(&format!("package-ecosystem: {e}")), "{e}");
+    // Updates are manual and tested (no Dependabot/Renovate config): see RELEASE/v0.11.0.md.
+    for f in [
+        ".github/dependabot.yml",
+        ".github/dependabot.yaml",
+        "renovate.json",
+    ] {
+        assert!(
+            !Path::new(env!("CARGO_MANIFEST_DIR")).join(f).exists(),
+            "{f} should not exist"
+        );
     }
-    // Noise control: grouped minor/patch, no surprise major-version PRs, monthly.
-    assert!(
-        b.matches("version-update:semver-major").count() >= 4,
-        "majors ignored per ecosystem"
-    );
-    assert!(b.contains("update-types: [minor, patch]"));
-    assert!(!b.contains("interval: weekly") && !b.contains("interval: daily"));
 }
 
 #[test]
 fn ac_0_10_6_e_every_ignored_advisory_has_an_accepted_adr() {
-    let audit = read(".cargo/audit.toml");
-    let deny = read("deny.toml");
+    // Ignores live in deny.toml (`id = "RUSTSEC-…"`), `.cargo/audit.toml` and the CI audit step.
+    let mut ids: Vec<String> = vec![];
+    for f in ["deny.toml", ".github/workflows/ci.yml"] {
+        for tok in read(f).split(|c: char| !(c.is_ascii_alphanumeric() || c == '-')) {
+            if tok.starts_with("RUSTSEC-") {
+                ids.push(tok.to_string());
+            }
+        }
+    }
+    if Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(".cargo/audit.toml")
+        .exists()
+    {
+        for tok in
+            read(".cargo/audit.toml").split(|c: char| !(c.is_ascii_alphanumeric() || c == '-'))
+        {
+            if tok.starts_with("RUSTSEC-") {
+                ids.push(tok.to_string());
+            }
+        }
+    }
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/adr");
     let adrs: Vec<String> = fs::read_dir(dir)
         .unwrap()
         .flatten()
         .map(|e| fs::read_to_string(e.path()).unwrap())
         .collect();
-    for id in audit.split('"').filter(|s| s.starts_with("RUSTSEC-")) {
-        assert!(
-            deny.contains(id),
-            "{id} ignored in audit.toml but not in deny.toml"
-        );
-        assert!(
-            read(".github/workflows/ci.yml").contains(id),
-            "{id} not passed to the CI audit step"
-        );
-        let ok = adrs
-            .iter()
-            .any(|a| a.contains(id) && a.contains("Status: Accepted") && a.contains("## Decision"));
-        assert!(ok, "{id} has no Accepted ADR");
+    for id in ids {
+        let ok = adrs.iter().any(|a| {
+            a.contains(&id) && a.contains("Status: Accepted") && a.contains("## Decision")
+        });
+        assert!(ok, "{id} is ignored but has no Accepted ADR");
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "greprum"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/teochenglim/greprum"
@@ -9,7 +9,7 @@ description = "Product analytics and RUM in one Rust binary, on GreptimeDB"
 [dependencies]
 anyhow = "1.0.104"
 async-trait = "0.1.92"
-axum = "0.7"
+axum = "0.8"
 chrono = "0.4.45"
 chrono-tz = "0.10.4"
 clap = { version = "4", features = ["derive"] }
@@ -21,11 +21,10 @@ rand = "0.8"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sha2 = "0.11.0"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "mysql", "chrono", "bigdecimal"] }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "mysql", "chrono", "bigdecimal"] }
 thiserror = "2.0.21"
 tokio = { version = "1.53.2", features = ["full"] }
 toml = "1.1.8"
-tower-http = { version = "0.5", features = ["cors", "limit"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 url = "2.5.8"

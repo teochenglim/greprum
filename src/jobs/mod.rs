@@ -67,7 +67,8 @@ impl SqlJobs {
 impl JobRunner for SqlJobs {
     async fn first_seen(&self, site: &str, since_ms: i64) -> anyhow::Result<()> {
         let (sql, _) = first_seen_sql();
-        sqlx::query(&sql)
+        // Fixed statement from `first_seen_sql()`; values are bound.
+        sqlx::query(sqlx::AssertSqlSafe(sql))
             .bind(site)
             .bind(since_ms)
             .execute(&self.pool)

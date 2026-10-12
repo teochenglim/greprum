@@ -55,11 +55,21 @@ describe('AC0.10.3 real browser main-thread budget', { skip: skip && 'no Chrome 
 
   it('AC0.10.3 tracker initialisation blocks the main thread for less than 50 ms', async () => {
     const { ctx, page } = await open();
-    const init = await page.evaluate(() => window.__t1 - window.__t0);
-    const long = await page.evaluate(() => window.__long.reduce((a, b) => a + b, 0));
-    console.log(`init ${init.toFixed(1)} ms (incl. localhost fetch), long tasks total ${long.toFixed(1)} ms`);
-    assert.ok(init < 50, `init ${init} ms`);
-    assert.ok(long < 50, `long tasks ${long} ms`);
+    // Main-thread cost = time from the script's bytes arriving to its init finishing (parse, compile,
+    // run). The network fetch is not main-thread blocking, so it is excluded: a cold CI VM can spend
+    // 100 ms just fetching 4 KB from localhost.
+    const m = await page.evaluate(() => {
+      const r = performance.getEntriesByType('resource').find((e) => e.name.endsWith('/t.js'));
+      return {
+        total: window.__t1 - window.__t0,
+        exec: window.__t1 - r.responseEnd,
+        fetch: r.responseEnd - r.startTime,
+        long: window.__long.reduce((a, b) => a + b, 0),
+      };
+    });
+    console.log(`init exec ${m.exec.toFixed(1)} ms, fetch ${m.fetch.toFixed(1)} ms, total ${m.total.toFixed(1)} ms, long tasks ${m.long.toFixed(1)} ms`);
+    assert.ok(m.exec < 50, `init execution ${m.exec} ms`);
+    assert.ok(m.long < 50, `long tasks ${m.long} ms`);
     assert.ok(await page.evaluate(() => typeof window.greprum === 'object'));
     await ctx.close();
   });

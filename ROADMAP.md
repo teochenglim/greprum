@@ -95,17 +95,17 @@ Details: [RELEASE/v0.9.0.md](RELEASE/v0.9.0.md)
 - [x] `kill -9` (20 rounds) and real 10-minute outage: nothing acknowledged lost
 - [x] Real-browser main-thread budget on a demo page
 - [x] Grafana + Prometheus in compose, 11 screenshots (`images/`), product-owner walkthrough
-- [x] Actions pinned by SHA, `cargo audit`/`deny`, Dependabot; sustained-load and fsync/dedup ADRs closed
+- [x] Actions pinned by SHA, `cargo audit`/`deny`; sustained-load and fsync/dedup ADRs closed
 - [ ] `make ro-user-test` (read-only DB user) executed
-- [x] CI fixes folded in: Node 22 test globs, audit ignore (ADR 0051), `test-db` split, tamed Dependabot, `scripts/release.sh`
+- [x] CI fixes folded in: Node 22 test globs, audit ignore (ADR 0051), `test-db` split, Dependabot removed (updates are manual, with tests)
 
 Details: [RELEASE/v0.10.0.md](RELEASE/v0.10.0.md)
 
-## v0.11.0 — Dependency upgrades 📋
+## v0.11.0 — Dependency upgrades ✅ (action majors verified on the tag run)
 
-- [ ] axum 0.8 + tower-http 0.7, sqlx 0.9, jsonwebtoken 11 (one commit each, full gate between)
-- [ ] Tracker toolchain (esbuild, jsdom, playwright-core); GitHub Action majors re-pinned
-- [ ] Re-check ADR 0051 (does sqlx 0.9 still pull `rsa`?)
+- [x] axum 0.8 (tower-http removed), sqlx 0.9 (drops `rsa`: advisory ignore removed), tracker toolchain
+- [x] jsonwebtoken deliberately stays on 9.x (ADR 0052)
+- [x] Action majors re-pinned by SHA
 
 Details: [RELEASE/v0.11.0.md](RELEASE/v0.11.0.md)
 

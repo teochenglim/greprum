@@ -166,5 +166,12 @@ bump: ## Rewrite VERSION and Cargo.toml with the new version (VERSION=x.y.z requ
 	@echo "VERSION -> $(VERSION)"
 
 .PHONY: release
-release: ## Commit first, then: validate, bump VERSION, amend into HEAD, push, tag, push tag (VERSION=x.y.z; DRY_RUN=1 to rehearse)
-	@./scripts/release.sh "$(VERSION)"
+release: ## Bump VERSION, push HEAD, tag, push the tag - triggers GitHub Actions (VERSION=x.y.z required)
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=x.y.z"; exit 1; fi
+	$(MAKE) bump VERSION=$(VERSION)
+	git add VERSION Cargo.toml Cargo.lock
+	git commit --amend --no-edit
+	git push origin HEAD
+	git tag v$(VERSION)
+	git push origin v$(VERSION)
+	@echo "Released v$(VERSION) - GitHub Actions will build and publish."

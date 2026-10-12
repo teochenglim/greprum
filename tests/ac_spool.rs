@@ -467,7 +467,7 @@ fn ac_0_4_16_b_insert_chunking_stays_under_placeholder_limit() {
     assert!(sqlx_sink::MAX_ROWS_PER_INSERT * sqlx_sink::INSERT_COLUMNS.len() < 65_535);
     let rows: Vec<_> = (0..3).map(|i| event("a", i)).collect();
     let qb = sqlx_sink::build_insert(&rows);
-    let sql = qb.sql();
+    let sql = qb.sql().as_str().to_string();
     assert_eq!(
         sql.matches('?').count(),
         3 * sqlx_sink::INSERT_COLUMNS.len()

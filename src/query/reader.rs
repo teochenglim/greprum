@@ -69,7 +69,8 @@ fn cell(row: &sqlx::mysql::MySqlRow, i: usize) -> Value {
 #[async_trait]
 impl Reader for SqlxReader {
     async fn fetch(&self, q: &Q) -> anyhow::Result<Vec<Value>> {
-        let mut query = sqlx::query(&q.sql);
+        // `q.sql` comes from the fixed builders in `query::build` (ADR 0024): fixed text and `?` only.
+        let mut query = sqlx::query(sqlx::AssertSqlSafe(q.sql.as_str()));
         for b in &q.binds {
             query = match b {
                 Bind::Str(s) => query.bind(s.clone()),

@@ -39,9 +39,9 @@ pub async fn fresh_with_ttl(ttl: &str) -> TestDb {
     let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     let name = format!("t{}_{}", std::process::id(), n);
     admin
-        .execute(sqlx::raw_sql(&format!(
+        .execute(sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "CREATE DATABASE IF NOT EXISTS {name}"
-        )))
+        ))))
         .await
         .expect("create db");
     let url = format!("{}/{}", base.rsplit_once('/').unwrap().0, name);
@@ -60,7 +60,7 @@ impl TestDb {
     pub async fn exec(&self, sql: &str) {
         self.reader
             .pool()
-            .execute(sqlx::raw_sql(sql))
+            .execute(sqlx::raw_sql(sqlx::AssertSqlSafe(sql.to_string())))
             .await
             .unwrap_or_else(|e| panic!("{sql}: {e}"));
     }
@@ -108,7 +108,9 @@ impl TestDb {
             let _ = self
                 .reader
                 .pool()
-                .execute(sqlx::raw_sql(&format!("ADMIN FLUSH_FLOW('{name}')")))
+                .execute(sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+                    "ADMIN FLUSH_FLOW('{name}')"
+                ))))
                 .await;
         }
     }

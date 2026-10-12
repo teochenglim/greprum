@@ -104,9 +104,9 @@ pub fn router(_s: Arc<AppState>) -> Router<Arc<AppState>> {
     let mut r = Router::new();
     for (path, kind) in ENDPOINTS {
         let k = *kind;
-        let route = path.replace("{id}", ":id");
+        // axum 0.8 path syntax is `{id}`, the same notation the endpoint table uses.
         r = r.route(
-            &route,
+            path,
             get(
                 move |State(s): State<Arc<AppState>>,
                       h: HeaderMap,

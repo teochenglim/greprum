@@ -37,7 +37,7 @@ process or browser, not only in unit tests.
 | 11 | Retention 13 months confirmed; PDPA review | **Open** | human decision/review | v1.0.0 |
 | 11 | Erasure | Done (documented) | not possible on append tables (ADR 0029); procedure in `docs/privacy.md` | v0.1.0 |
 | 12 | ADR log, licence | Done | Apache-2.0 (ADR 0027) | v1.0.0 |
-| – | CI actions pinned by SHA, dependency audit | Done | SHA pins, audit + deny job, Dependabot | v0.10.0 |
+| – | CI actions pinned by SHA, dependency audit | Done | SHA pins, audit + deny job; dependency updates are manual (`make github-action-bump`, `cargo update`) | v0.10.0 |
 | – | GHCR image published | **Open** | workflow written, never run; first tag push (user) | v1.0.0 |
 
 ## Release plan for the remainder

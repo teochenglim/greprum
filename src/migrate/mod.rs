@@ -261,7 +261,8 @@ pub async fn apply(url: &str, ttl: &str, flow_prefix: &str) -> Result<Vec<&'stat
     let mut done = vec![];
     for s in plan_prefixed(ttl, flow_prefix)? {
         // Text protocol: DDL is not prepared.
-        pool.execute(sqlx::raw_sql(&s.sql))
+        // DDL is literal text from this module only (never request text): audited for sqlx 0.9.
+        pool.execute(sqlx::raw_sql(sqlx::AssertSqlSafe(s.sql.as_str())))
             .await
             .with_context(|| format!("applying {}", s.name))?;
         done.push(s.name);

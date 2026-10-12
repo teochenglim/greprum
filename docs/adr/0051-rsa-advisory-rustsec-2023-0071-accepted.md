@@ -1,6 +1,6 @@
 # ADR 0051 — Accept RUSTSEC-2023-0071 (rsa, via sqlx-mysql)
 
-Status: Accepted
+Status: Superseded
 
 ## Context
 
@@ -24,3 +24,9 @@ Ignore the advisory (`.cargo/audit.toml`, `deny.toml`, the CI audit step) and re
 The CI gate stays meaningful: any *other* advisory still fails the build. Revisit when (a) a patched `rsa`
 ships, (b) sqlx drops or feature-gates `rsa` (check during the v0.11.0 sqlx upgrade), or (c) we add a TLS or
 RSA-auth path that signs or decrypts with a private key.
+
+## Update (v0.11.0)
+
+sqlx 0.9 no longer depends on `rsa` (`cargo tree -i rsa` finds nothing). The sqlx upgrade removed the advisory,
+so the ignore entries (`.cargo/audit.toml`, `deny.toml`, the CI audit step) were deleted and this ADR is
+superseded. Any future ignore needs its own Accepted ADR (checked by `ac_0_10_6_e`).

@@ -72,7 +72,7 @@ fn nz(s: &str) -> Option<&str> {
     if s.is_empty() { None } else { Some(s) }
 }
 
-pub fn build_insert<'a>(rows: &'a [StoredEvent]) -> QueryBuilder<'a, MySql> {
+pub fn build_insert(rows: &[StoredEvent]) -> QueryBuilder<MySql> {
     let mut qb: QueryBuilder<MySql> = QueryBuilder::new(format!(
         "INSERT INTO events ({}) ",
         INSERT_COLUMNS.join(", ")

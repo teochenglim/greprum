@@ -14,6 +14,7 @@ Docs: `PRD.md` = requirements · `ROADMAP.md` = plan · `RELEASE/vX.Y.Z.md` = re
 
 - **The user does ALL git commits, pushes, tags, and releases manually. The agent never runs git commit/push/tag, `make bump`, or `make release`.**
 - The release command is `make release VERSION=x.y.z` (space + `VERSION=`).
+- Workflow (same as `~/code/veda`): **commit first, then `make release VERSION=x.y.z`** — it amends the bump into that fresh commit, pushes `HEAD`, tags `vX.Y.Z` and pushes the tag. Run it once per commit; on an already-pushed commit it would rewrite history and the push is rejected.
 - When an implementation is finished, give a 1-line commit-message summary; the user commits and releases.
 - `make release` amends the VERSION bump into HEAD and pushes `origin HEAD` — it fails unless the repo has ≥1 commit AND an `origin` remote.
 - `VERSION` is the source of truth; `Cargo.toml` version must match (`make version-check`, enforced in CI). Tags are `vX.Y.Z`; CI is tag-driven (`v*`) plus PRs.
