@@ -9,8 +9,8 @@
     "size": "node size.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.25.5",
+    "esbuild": "0.28.2",
     "jsdom": "26.1.0",
-    "playwright-core": "^1.55.0"
+    "playwright-core": "^1.64.0"
   }
 }
