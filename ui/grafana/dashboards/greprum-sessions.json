@@ -79,7 +79,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT session_id, min(ts) AS started, count(*) AS events, max(user_id) AS user_id, max(country) AS country, max(device) AS device, max(browser) AS browser, sum(CASE WHEN event_name = '$rage_click' THEN 1 ELSE 0 END) AS rage_clicks, sum(CASE WHEN event_name = '$error' THEN 1 ELSE 0 END) AS errors FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) AND user_id LIKE '${user_id}' AND country LIKE '${country}' GROUP BY session_id ORDER BY started DESC LIMIT 200"
+          "rawSql": "SELECT session_id, min(ts) AS started, count(*) AS events, max(user_id) AS user_id, max(country) AS country, max(device) AS device, max(browser) AS browser, sum(CASE WHEN event_name = '$rage_click' THEN 1 ELSE 0 END) AS rage_clicks, sum(CASE WHEN event_name = '$error' THEN 1 ELSE 0 END) AS errors FROM events WHERE site_id = '${site}' AND $__timeFilter(ts) AND coalesce(user_id, '') LIKE '${user_id}' AND coalesce(country, '') LIKE '${country}' GROUP BY session_id ORDER BY started DESC LIMIT 200"
         }
       ],
       "fieldConfig": {

@@ -5,7 +5,7 @@ listen = "127.0.0.1:8080"          # binds loopback by default; put a reverse pr
 tracker_path = "/t.js"             # serve from your own domain (ad blockers)
 collect_path = "/collect"
 country_header = "cf-ipcountry"    # set by a trusted proxy; the client IP is never stored
-rate_limit_per_min = 600           # per site key
+rate_limit_per_min = 60000         # requests per minute per site key (abuse guard, ~1 000 batches/s)
 
 [greptime]
 write_url = "mysql://root@127.0.0.1:4002/public"
@@ -18,6 +18,14 @@ dir = "./spool"                    # needs a persistent volume
 cap_bytes = 2147483648
 strict_fsync = false               # true: acknowledge only after fsync
 
+[geoip]
+# database = "/data/GeoLite2-Country.mmdb"   # optional; the IP is looked up and discarded
+
+[jobs]
+enabled = true
+first_seen_secs = 3600     # retention: insert newly seen visitors
+reconcile_secs = 3600      # loss estimate + duplicate rate over the last full hour
+
 [[site]]
 id = "web"
 key = "pk_replace_me"
@@ -27,6 +35,11 @@ timezone = "Asia/Singapore"
 # store_text = true
 # honour_dnt = false
 # drop_attrs = ["data-email"]
+# template_ids = true                        # /orders/42 -> /orders/:id (digits, UUIDs, long hex)
+# max_token_ttl_secs = 3600                  # refuse identity tokens that expire later than this
+# [[site.routes]]
+# pattern = "/users/*/orders"                # * matches one path segment
+# template = "/users/:id/orders"
 
 [[api_key]]
 name = "grafana"

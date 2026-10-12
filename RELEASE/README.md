@@ -12,7 +12,7 @@ known limitations and the release checklist. Mapping to PRD §10 phases:
 | [v0.5.0](v0.5.0.md) | Query API | 4 | site isolation; no SQL from request text; `window_seconds` required | 0.4 |
 | [v0.6.0](v0.6.0.md) | Grafana dashboards | 5 | product owner answers the two questions without SQL | 0.5 |
 | [v0.7.0](v0.7.0.md) | Container image & GHCR | — (distribution) | non-root image on a volume; multi-arch image published to GHCR on tag | 0.4 |
-| [v0.8.0](v0.8.0.md) | Jobs wired | 6/7 (gap) | first-seen and reconcile run inside `serve`; retention and loss gauges live | 0.7 |
+| [v0.8.0](v0.8.0.md) | Jobs wired (+ CI fix for the v0.7.0 tag) | 6/7 (gap) | first-seen and reconcile run inside `serve`; retention and loss gauges live; clean-checkout `make check` green | 0.7 |
 | [v0.9.0](v0.9.0.md) | PRD completeness | 3/4/5/9/11 (gap) | configurable rage, INP test, route templates, GeoIP, token TTL cap, week-vs-week | 0.8 |
 | [v0.10.0](v0.10.0.md) | Operational proof & supply chain | 7/10 (gap) | kill -9 and real outage, real browser, Grafana in compose, SHA pins + audit | 0.9 |
 | [v1.0.0](v1.0.0.md) | Launch hardening | 6 (decision) | embedded-UI go/no-go, licence (ADR 0027), PDPA review | 0.6 |

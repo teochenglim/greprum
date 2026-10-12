@@ -14,6 +14,10 @@ pub struct Config {
     pub spool: SpoolConfig,
     #[serde(default)]
     pub ingest: IngestConfig,
+    #[serde(default)]
+    pub jobs: JobsConfig,
+    #[serde(default)]
+    pub geoip: GeoIpConfig,
     #[serde(default, rename = "site")]
     pub sites: Vec<SiteConfig>,
     #[serde(default, rename = "api_key")]
@@ -42,7 +46,34 @@ impl Default for ServerConfig {
             collect_path: "/collect".into(),
             country_header: "cf-ipcountry".into(),
             ip_header: String::new(),
-            rate_limit_per_min: 600,
+            rate_limit_per_min: 60_000,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct GeoIpConfig {
+    /// Path to a MaxMind country database (`GeoLite2-Country.mmdb`). Empty = header country only.
+    pub database: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct JobsConfig {
+    pub enabled: bool,
+    /// Insert newly seen visitors into `first_seen` (retention).
+    pub first_seen_secs: u64,
+    /// Loss estimate and duplicate rate over the last full hour.
+    pub reconcile_secs: u64,
+}
+
+impl Default for JobsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            first_seen_secs: 3600,
+            reconcile_secs: 3600,
         }
     }
 }
@@ -120,6 +151,9 @@ pub struct IngestConfig {
     pub backfill_batch: usize,
     /// Fresh lane failing this long demotes its pending range to the backfill lane.
     pub fresh_stall_secs: u64,
+    /// Fresh lane running further behind than this hands its backlog to the backfill lane
+    /// (5 000 events per insert) so new events keep priority and the age stays bounded.
+    pub fresh_lag_secs: u64,
     pub max_batch_events: usize,
     pub max_body_bytes: usize,
     pub drop_bots: bool,
@@ -137,6 +171,7 @@ impl Default for IngestConfig {
             fresh_interval_ms: 1000,
             backfill_batch: 5000,
             fresh_stall_secs: 30,
+            fresh_lag_secs: 5,
             max_batch_events: 50,
             max_body_bytes: 64 * 1024,
             drop_bots: true,
@@ -165,6 +200,44 @@ pub struct SiteConfig {
     /// Honour Do Not Track on the server side too.
     #[serde(default)]
     pub honour_dnt: bool,
+    /// Route templates applied to `path` and `parent_path` (first match wins).
+    #[serde(default)]
+    pub routes: Vec<RouteRule>,
+    /// Replace numeric, UUID and long-hex path segments with `:id`.
+    #[serde(default)]
+    pub template_ids: bool,
+    /// Identity tokens whose `exp` is further away than this are treated as anonymous.
+    #[serde(default = "default_token_ttl")]
+    pub max_token_ttl_secs: u64,
+}
+
+fn default_token_ttl() -> u64 {
+    3600
+}
+
+impl Default for SiteConfig {
+    fn default() -> Self {
+        SiteConfig {
+            id: String::new(),
+            key: String::new(),
+            origins: vec![],
+            hmac_secret: String::new(),
+            timezone: default_tz(),
+            drop_attrs: vec![],
+            store_text: true,
+            honour_dnt: false,
+            routes: vec![],
+            template_ids: false,
+            max_token_ttl_secs: default_token_ttl(),
+        }
+    }
+}
+
+/// `pattern = "/users/*/orders"`, `template = "/users/:id/orders"`. `*` matches one segment.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct RouteRule {
+    pub pattern: String,
+    pub template: String,
 }
 
 fn default_tz() -> String {
@@ -238,6 +311,17 @@ impl Config {
             if s.timezone.parse::<chrono_tz::Tz>().is_err() {
                 bail!("site {}: unknown timezone {}", s.id, s.timezone);
             }
+            for r in &s.routes {
+                if !r.pattern.starts_with('/') || !r.template.starts_with('/') {
+                    bail!(
+                        "site {}: route pattern and template must start with /",
+                        s.id
+                    );
+                }
+            }
+            if s.max_token_ttl_secs == 0 {
+                bail!("site {}: max_token_ttl_secs must be > 0", s.id);
+            }
         }
         for k in &self.api_keys {
             if k.sha256.len() != 64 || !k.sha256.bytes().all(|b| b.is_ascii_hexdigit()) {
@@ -248,6 +332,9 @@ impl Config {
                     bail!("api_key {}: unknown site {}", k.name, s);
                 }
             }
+        }
+        if self.jobs.first_seen_secs == 0 || self.jobs.reconcile_secs == 0 {
+            bail!("jobs intervals must be > 0");
         }
         crate::migrate::validate_prefix(&self.greptime.flow_prefix)?;
         crate::migrate::validate_ttl(&self.greptime.ttl)?;

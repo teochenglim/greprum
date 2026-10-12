@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 pub mod db;
+pub mod ops;
 pub mod spool;
 use greprum::config::{IngestConfig, SiteConfig};
 use serde_json::{Value, json};
@@ -14,6 +15,7 @@ pub fn site() -> SiteConfig {
         drop_attrs: vec![],
         store_text: true,
         honour_dnt: false,
+        ..Default::default()
     }
 }
 

@@ -261,6 +261,19 @@ impl Drainer {
         }
     }
 
+    /// When the fresh lane has fallen further behind than `fresh_lag_secs`, hand its backlog to
+    /// the backfill lane (bigger inserts) and jump to the tail. Returns whether it demoted.
+    pub fn maybe_demote_lagging(&mut self, now_ms: i64) -> bool {
+        let mut dead = 0;
+        let (head, _) = self.collect(self.cp.fresh, None, 1, &mut dead);
+        let lag = head.first().map(|b| now_ms - b.received_at).unwrap_or(0);
+        if lag > self.cfg.fresh_lag_secs as i64 * 1000 && self.spool.tail() > self.cp.fresh {
+            self.demote_fresh();
+            return true;
+        }
+        false
+    }
+
     /// Age of the oldest unwritten event in ms (0 when drained). Also sets the metric.
     pub fn oldest_unwritten_age_ms(&self, now_ms: i64) -> u64 {
         let mut dead = 0;
@@ -300,6 +313,9 @@ impl Drainer {
                 .map(|d| d.as_millis() as i64)
                 .unwrap_or(0);
             self.oldest_unwritten_age_ms(now_ms);
+            if !retry && self.maybe_demote_lagging(now_ms) {
+                busy = true;
+            }
             if retry {
                 let since = *failing_since.get_or_insert_with(std::time::Instant::now);
                 if since.elapsed() >= Duration::from_secs(self.cfg.fresh_stall_secs) {

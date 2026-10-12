@@ -174,21 +174,23 @@
 
   if (__EXTRAS__) {
     var clicks = [], burst = 0, pend = [], mo;
-    var NEXT = /^(next|previous|prev|>|<|\+|-)$/;
+    var RC = parseInt(A('rage-count', '3'), 10) || 3, RPX = parseInt(A('rage-px', '30'), 10) || 30;
+    var RMS = parseInt(A('rage-ms', '1000'), 10) || 1000;
+    var ign = A('rage-ignore', 'next,previous,prev,>,<,+,-').toLowerCase().split(',');
     var alive = function () { for (var i = 0; i < pend.length; i++) pend[i].a = 1; };
     var ignoreRage = function (el) {
       var x = (el.innerText || el.textContent || '').trim().toLowerCase(), a = (el.getAttribute('aria-label') || '').toLowerCase();
       return el.closest('[data-rum-no-rage],textarea,[contenteditable=""],[contenteditable=true],input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio])') ||
-        NEXT.test(x) || NEXT.test(a) || /\b(next|previous|prev)\b/.test(x + ' ' + a);
+        ign.some(function (w) { return w === x || w === a || (/^[a-z]+$/.test(w) && new RegExp('\\b' + w + '\\b').test(x + ' ' + a)); });
     };
-    // rage: 3 clicks within 30 px inside 1000 ms, one event per burst; dead: nothing observable in 1 s
+    // rage: RC clicks within RPX px inside RMS ms, one event per burst; dead: nothing observable in 1 s
     X.click = function (ev, t, el) {
       var now = Date.now(), c = { t: now, x: ev.clientX, y: ev.clientY };
-      clicks = clicks.filter(function (k) { return now - k.t <= 1000; });
+      clicks = clicks.filter(function (k) { return now - k.t <= RMS; });
       if (!clicks.length) burst = 0;
       clicks.push(c);
-      var near = clicks.filter(function (k) { return Math.abs(k.x - c.x) <= 30 && Math.abs(k.y - c.y) <= 30; });
-      if (near.length >= 3 && !burst && !ignoreRage(t)) { burst = 1; emit('$rage_click', { element: describe(el) }); }
+      var near = clicks.filter(function (k) { return Math.abs(k.x - c.x) <= RPX && Math.abs(k.y - c.y) <= RPX; });
+      if (near.length >= RC && !burst && !ignoreRage(t)) { burst = 1; emit('$rage_click', { element: describe(el) }); }
       if (t.closest('a[href],[data-rum-no-dead]')) return; // links are never dead
       var rec = { a: 0 }, u0 = loc.href;
       pend.push(rec);

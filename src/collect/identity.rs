@@ -6,13 +6,13 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 struct Claims {
     sub: String,
-    #[allow(dead_code)]
     exp: u64,
 }
 
-/// Returns the opaque `sub` when signature and expiry are valid.
+/// Returns the opaque `sub` when signature and expiry are valid and `exp` is no further than
+/// `max_ttl_secs` from now (tokens must be short-lived, PRD §4).
 /// Invalid or missing tokens yield `None`: the event is stored anonymous.
-pub fn verify(token: &str, secret: &str) -> Option<String> {
+pub fn verify(token: &str, secret: &str, max_ttl_secs: u64) -> Option<String> {
     if token.is_empty() || secret.is_empty() {
         return None;
     }
@@ -21,6 +21,13 @@ pub fn verify(token: &str, secret: &str) -> Option<String> {
     v.leeway = 0;
     v.set_required_spec_claims(&["exp", "sub"]);
     let data = decode::<Claims>(token, &DecodingKey::from_secret(secret.as_bytes()), &v).ok()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    if data.claims.exp > now + max_ttl_secs {
+        return None;
+    }
     let sub = data.claims.sub;
     if sub.is_empty() || sub.len() > 200 {
         None
@@ -54,26 +61,26 @@ mod tests {
     #[test]
     fn valid_token_yields_sub() {
         assert_eq!(
-            verify(&tok(Algorithm::HS256, "k", "u_1", now() + 300), "k").as_deref(),
+            verify(&tok(Algorithm::HS256, "k", "u_1", now() + 300), "k", 3600).as_deref(),
             Some("u_1")
         );
     }
 
     #[test]
     fn expired_wrong_secret_wrong_alg_and_garbage_are_anonymous() {
-        assert!(verify(&tok(Algorithm::HS256, "k", "u", now() - 10), "k").is_none());
-        assert!(verify(&tok(Algorithm::HS256, "k", "u", now() + 300), "other").is_none());
+        assert!(verify(&tok(Algorithm::HS256, "k", "u", now() - 10), "k", 3600).is_none());
+        assert!(verify(&tok(Algorithm::HS256, "k", "u", now() + 300), "other", 3600).is_none());
         // Algorithm pinning: HS384 signed with the right secret is refused.
-        assert!(verify(&tok(Algorithm::HS384, "k", "u", now() + 300), "k").is_none());
-        assert!(verify("not.a.jwt", "k").is_none());
-        assert!(verify("", "k").is_none());
-        assert!(verify(&tok(Algorithm::HS256, "k", "u", now() + 300), "").is_none());
+        assert!(verify(&tok(Algorithm::HS384, "k", "u", now() + 300), "k", 3600).is_none());
+        assert!(verify("not.a.jwt", "k", 3600).is_none());
+        assert!(verify("", "k", 3600).is_none());
+        assert!(verify(&tok(Algorithm::HS256, "k", "u", now() + 300), "", 3600).is_none());
     }
 
     #[test]
     fn alg_none_is_refused() {
         // header {"alg":"none"} . {"sub":"u","exp":9999999999} .
         let t = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1IiwiZXhwIjo5OTk5OTk5OTk5fQ.";
-        assert!(verify(t, "k").is_none());
+        assert!(verify(t, "k", 3600).is_none());
     }
 }

@@ -103,6 +103,48 @@ pub fn normalise_path(raw: &str) -> String {
     cut(&s, PATH_MAX)
 }
 
+fn looks_like_id(seg: &str) -> bool {
+    let all = |s: &str, f: fn(char) -> bool| !s.is_empty() && s.chars().all(f);
+    if all(seg, |c| c.is_ascii_digit()) {
+        return true;
+    }
+    let uuid = seg.len() == 36
+        && seg.chars().enumerate().all(|(i, c)| {
+            if [8, 13, 18, 23].contains(&i) {
+                c == '-'
+            } else {
+                c.is_ascii_hexdigit()
+            }
+        });
+    uuid || (seg.len() >= 16 && all(seg, |c| c.is_ascii_hexdigit()))
+}
+
+/// Apply a site's route templates to an already normalised path (R-G18).
+pub fn template_path(site: &SiteConfig, path: &str) -> String {
+    for r in &site.routes {
+        let pat: Vec<&str> = r.pattern.trim_matches('/').split('/').collect();
+        let seg: Vec<&str> = path.trim_matches('/').split('/').collect();
+        if pat.len() == seg.len() && pat.iter().zip(&seg).all(|(p, s)| *p == "*" || p == s) {
+            return r.template.clone();
+        }
+    }
+    if site.template_ids && path != "/" {
+        let t: Vec<String> = path
+            .trim_matches('/')
+            .split('/')
+            .map(|s| {
+                if looks_like_id(s) {
+                    ":id".to_string()
+                } else {
+                    s.to_string()
+                }
+            })
+            .collect();
+        return format!("/{}", t.join("/"));
+    }
+    path.to_string()
+}
+
 pub fn referrer_host(raw: &str) -> String {
     url::Url::parse(raw)
         .ok()
@@ -205,7 +247,7 @@ pub fn process(
     let user_id = batch
         .token
         .as_deref()
-        .and_then(|t| identity::verify(t, &site.hmac_secret));
+        .and_then(|t| identity::verify(t, &site.hmac_secret, site.max_token_ttl_secs));
     let rate = clean_sample_rate(batch.sample_rate);
     let env = cut(batch.env.as_deref().unwrap_or(""), SHORT_MAX);
     let release = cut(batch.release.as_deref().unwrap_or(""), SHORT_MAX);
@@ -295,11 +337,11 @@ pub fn process(
                     .unwrap_or(false),
             seq,
             is_late,
-            path: normalise_path(&str_of(ev, "path")),
+            path: template_path(site, &normalise_path(&str_of(ev, "path"))),
             page_group: cut(&str_of(ev, "page_group"), SHORT_MAX),
             parent_path: match str_of(ev, "parent_path") {
                 p if p.is_empty() => String::new(),
-                p => normalise_path(&p),
+                p => template_path(site, &normalise_path(&p)),
             },
             referrer_host: referrer_host(&str_of(ev, "referrer")),
             el_tag: cut(&el_s("tag"), 32),

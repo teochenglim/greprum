@@ -269,6 +269,108 @@
         "overrides": []
       },
       "options": {}
+    },
+    {
+      "id": 8,
+      "title": "Sessions: this period vs previous",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "The selected range against the range of equal length just before it (default: this week against last).",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT cur.n AS this_period, prev.n AS previous_period, CASE WHEN prev.n > 0 THEN (cur.n - prev.n) * 100.0 / prev.n ELSE NULL END AS change_pct FROM (SELECT coalesce(sum(sessions), 0) AS n FROM session_starts_1h WHERE site_id = '${site}' AND $__timeFilter(time_window)) cur CROSS JOIN (SELECT coalesce(sum(sessions), 0) AS n FROM session_starts_1h WHERE site_id = '${site}' AND time_window >= FROM_UNIXTIME($__unixEpochFrom() * 2 - $__unixEpochTo()) AND time_window < FROM_UNIXTIME($__unixEpochFrom())) prev"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 9,
+      "title": "Page views: this period vs previous",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "The selected range against the range of equal length just before it (default: this week against last).",
+      "gridPos": {
+        "x": 8,
+        "y": 20,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT cur.n AS this_period, prev.n AS previous_period, CASE WHEN prev.n > 0 THEN (cur.n - prev.n) * 100.0 / prev.n ELSE NULL END AS change_pct FROM (SELECT coalesce(sum(views), 0) AS n FROM page_edges_1h_tbl WHERE site_id = '${site}' AND $__timeFilter(time_window)) cur CROSS JOIN (SELECT coalesce(sum(views), 0) AS n FROM page_edges_1h_tbl WHERE site_id = '${site}' AND time_window >= FROM_UNIXTIME($__unixEpochFrom() * 2 - $__unixEpochTo()) AND time_window < FROM_UNIXTIME($__unixEpochFrom())) prev"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 10,
+      "title": "Clicks: this period vs previous",
+      "type": "table",
+      "datasource": {
+        "type": "mysql",
+        "uid": "greprum-greptime"
+      },
+      "description": "The selected range against the range of equal length just before it (default: this week against last).",
+      "gridPos": {
+        "x": 16,
+        "y": 20,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mysql",
+            "uid": "greprum-greptime"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT cur.n AS this_period, prev.n AS previous_period, CASE WHEN prev.n > 0 THEN (cur.n - prev.n) * 100.0 / prev.n ELSE NULL END AS change_pct FROM (SELECT coalesce(sum(click_count), 0) AS n FROM click_stats_1h WHERE site_id = '${site}' AND $__timeFilter(time_window)) cur CROSS JOIN (SELECT coalesce(sum(click_count), 0) AS n FROM click_stats_1h WHERE site_id = '${site}' AND time_window >= FROM_UNIXTIME($__unixEpochFrom() * 2 - $__unixEpochTo()) AND time_window < FROM_UNIXTIME($__unixEpochFrom())) prev"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
     }
   ],
   "annotations": {

@@ -194,3 +194,23 @@ fn ac_0_7_5_b_agents_md_keeps_the_user_owns_git_rule() {
     assert!(a.contains("never runs git commit/push/tag"));
     assert!(a.contains("make release VERSION=x.y.z"));
 }
+
+// ---- regression: the first tag build failed on a clean checkout (folded into v0.8.0) -----
+
+#[test]
+fn ci_regression_tracker_target_installs_locked_node_dependencies() {
+    let m = read("Makefile");
+    assert!(m.contains("tracker/node_modules: tracker/package.json tracker/package-lock.json"));
+    assert!(m.contains("npm ci"));
+    assert!(
+        m.contains("tracker: tracker/node_modules"),
+        "build depends on installed deps"
+    );
+    assert!(!m.contains("npm install"), "reproducible installs only");
+    let r = read(".github/workflows/release.yml");
+    assert!(
+        r.contains("npm ci"),
+        "release build installs the tracker deps"
+    );
+    assert!(!r.contains("macos-13"), "retired runner");
+}

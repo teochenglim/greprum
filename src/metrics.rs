@@ -47,6 +47,26 @@ impl Metrics {
         }
     }
 
+    /// Gauge-style labelled value (overwrites).
+    pub fn set_label(&self, name: &'static str, label: &str, v: u64) {
+        if let Ok(mut m) = self.labeled.lock() {
+            m.insert((name, label.to_string()), v);
+        }
+    }
+
+    /// Sum of a labelled counter over all labels.
+    pub fn label_sum(&self, name: &'static str) -> u64 {
+        self.labeled
+            .lock()
+            .map(|m| {
+                m.iter()
+                    .filter(|((n, _), _)| *n == name)
+                    .map(|(_, v)| *v)
+                    .sum()
+            })
+            .unwrap_or(0)
+    }
+
     pub fn label_value(&self, name: &'static str, label: &str) -> u64 {
         self.labeled
             .lock()
@@ -182,6 +202,10 @@ impl Metrics {
                     "dropped_total" => "reason",
                     "shed_total" => "class",
                     "rejected_by_total" => "reason",
+                    "job_runs_total" | "job_failures_total" | "job_last_run_timestamp_seconds" => {
+                        "job"
+                    }
+                    "site_browser_loss_ppm" | "site_duplicate_rate_ppm" => "site",
                     _ => "label",
                 };
                 let _ = writeln!(

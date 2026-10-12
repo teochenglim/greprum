@@ -84,7 +84,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT f.cohort_day AS cohort_day_index, v.act_day - f.cohort_day AS day_n, count(DISTINCT f.visitor_id) AS visitors FROM (SELECT visitor_id, CAST(floor((CAST(first_seen_ts AS BIGINT) + ${tz_offset_ms}) / 86400000) AS BIGINT) AS cohort_day FROM first_seen WHERE site_id = '${site}' AND $__timeFilter(first_seen_ts)) f JOIN (SELECT visitor_id, CAST(floor((CAST(time_window AS BIGINT) + ${tz_offset_ms}) / 86400000) AS BIGINT) AS act_day FROM visitor_hours WHERE site_id = '${site}') v ON v.visitor_id = f.visitor_id WHERE v.act_day >= f.cohort_day AND v.act_day - f.cohort_day <= 14 GROUP BY f.cohort_day, day_n ORDER BY f.cohort_day, day_n"
+          "rawSql": "WITH c AS ( SELECT f.cohort_day AS cohort_day, v.act_day - f.cohort_day AS day_n, count(DISTINCT f.visitor_id) AS visitors FROM (SELECT visitor_id, CAST(floor((CAST(first_seen_ts AS BIGINT) + ${tz_offset_ms}) / 86400000) AS BIGINT) AS cohort_day FROM first_seen WHERE site_id = '${site}' AND $__timeFilter(first_seen_ts)) f JOIN (SELECT visitor_id, CAST(floor((CAST(time_window AS BIGINT) + ${tz_offset_ms}) / 86400000) AS BIGINT) AS act_day FROM visitor_hours WHERE site_id = '${site}') v ON v.visitor_id = f.visitor_id WHERE v.act_day >= f.cohort_day AND v.act_day - f.cohort_day <= 14 GROUP BY f.cohort_day, day_n) SELECT date_format(from_unixtime(c.cohort_day * 86400), '%Y-%m-%d') AS cohort, s.visitors AS cohort_size, c.day_n AS days_later, c.visitors AS returned, round(c.visitors * 100.0 / s.visitors, 1) AS retention_pct FROM c JOIN (SELECT cohort_day, visitors FROM c WHERE day_n = 0) s ON s.cohort_day = c.cohort_day ORDER BY c.cohort_day, c.day_n"
         }
       ],
       "fieldConfig": {
