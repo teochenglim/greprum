@@ -145,6 +145,13 @@ Details: [RELEASE/v0.12.0.md](RELEASE/v0.12.0.md)
 
 Details: [RELEASE/v0.13.0.md](RELEASE/v0.13.0.md)
 
+## v0.13.1 — Patch: security advisories in the lockfile 📋
+
+- [x] ctutils 0.4.5 (RUSTSEC-2026-0385), tokio 1.54.1 (RUSTSEC-2026-0386); `cargo audit` + `cargo deny` green
+- [ ] Green CI/Release/Docker run on the tag (user)
+
+Details: [RELEASE/v0.13.1.md](RELEASE/v0.13.1.md)
+
 ## v1.0.0 — Launch hardening 📋
 
 - [x] Embedded UI go/no-go (no-go, ADR 0044), licence Apache-2.0 (ADR 0027), PDPA/erasure docs, contract freeze tests
