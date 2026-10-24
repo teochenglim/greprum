@@ -1,7 +1,8 @@
 # Local stack: GreptimeDB + GrepRUM + Prometheus + Grafana (dashboards provisioned).
-#   docker compose up -d                          # zero edits: demo site `pk_demo`, tables created by `migrate`
-#   docker compose --profile demo run --rm seed   # optional: 30 000 synthetic events, 7 days
+#   docker compose up -d     # one GrepRUM container does it all: migrates, seeds demo data, serves
+#   docker compose down -v   # clean slate
 # Own config: GREPRUM_CONFIG=./greprum.toml docker compose up -d   (tutorials/05-going-to-production.md)
+#   demo data is only generated when the config defines the site `demo`.
 # Grafana: http://127.0.0.1:3000 (anonymous viewer; admin/admin to edit). Override host ports with
 # GREPRUM_PORT, GREPTIME_HTTP_PORT, GREPTIME_MYSQL_PORT, GRAFANA_PORT, PROMETHEUS_PORT.
 services:
@@ -15,33 +16,17 @@ services:
       - "127.0.0.1:${GREPTIME_MYSQL_PORT:-4002}:4002"
     volumes: ["greptime-data:/greptimedb_data"]
 
-  # One-shot: creates the events table and Flow rollups (idempotent), waiting for GreptimeDB.
-  migrate:
-    image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
-    command: ["migrate", "--config", "/etc/greprum/greprum.toml", "--wait", "90"]
-    depends_on: [greptime]
-    restart: "no"
-    volumes:
-      - ${GREPRUM_CONFIG:-./docker/quickstart.toml}:/etc/greprum/greprum.toml:ro
-
+  # One container does it all (ADR 0053): waits for GreptimeDB, creates the tables and Flow
+  # rollups, seeds 30 000 demo events for site `demo` (first start only, skipped when the
+  # config has no `demo` site or events are already there), then serves the gateway.
   greprum:
     image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
+    command: ["playground", "--config", "/etc/greprum/greprum.toml", "--wait", "90", "--demo-data"]
+    depends_on: [greptime]
     ports: ["127.0.0.1:${GREPRUM_PORT:-8080}:8080"]
     volumes:
       - greprum-data:/data
       - ${GREPRUM_CONFIG:-./docker/quickstart.toml}:/etc/greprum/greprum.toml:ro
-
-  # `docker compose --profile demo run --rm seed`: deterministic demo data for site `demo`.
-  seed:
-    profiles: ["demo"]
-    image: ${GREPRUM_IMAGE:-ghcr.io/teochenglim/greprum:latest}
-    command: ["gen", "--url", "mysql://root@greptime:4002/public", "--site", "demo", "--events", "30000", "--days", "7", "--seed", "7"]
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
 
   prometheus:
     image: prom/prometheus:v3.5.0

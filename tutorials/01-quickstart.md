@@ -9,12 +9,14 @@ git clone https://github.com/teochenglim/greprum && cd greprum
 docker compose up -d
 ```
 
-Four services start, plus a one-shot `migrate` that creates the tables and rollup flows and then exits:
+Four services start; there are no one-shot containers. The `greprum` container runs `greprum playground`
+([ADR 0053](../docs/adr/0053-playground-inits-and-serves-in-one-process.md)): it waits for GreptimeDB,
+creates the tables and Flow rollups, seeds demo data, then serves the gateway:
 
 | Service | Port | What it is |
 |---|---|---|
 | `greptime` | 4000 HTTP, 4002 MySQL | GreptimeDB v1.2.1, the only database |
-| `greprum` | 8080 | tracker (`/t.js`), ingest (`/collect`), query API (`/api/v1/*`), `/metrics` |
+| `greprum` | 8080 | one container that migrates, seeds and serves: tracker (`/t.js`), ingest (`/collect`), query API (`/api/v1/*`), `/metrics` |
 | `prometheus` | 9090 | scrapes GrepRUM's own `/metrics` |
 | `grafana` | 3000 | 11 provisioned dashboards, anonymous viewer |
 
@@ -27,14 +29,12 @@ curl http://127.0.0.1:8080/healthz        # ok
 Port clash? Override with `GREPRUM_PORT`, `GRAFANA_PORT`, `GREPTIME_HTTP_PORT`, `GREPTIME_MYSQL_PORT`,
 `PROMETHEUS_PORT`.
 
-## Load demo data
+## Demo data
 
-```bash
-docker compose --profile demo run --rm seed
-```
-
-That writes 30 000 deterministic synthetic events for site `demo` (7 days of sessions, clicks, rage clicks,
-errors, several countries and devices). Or do both steps with `make demo`.
+The first start seeds 30 000 deterministic synthetic events for site `demo` (7 days of sessions, clicks,
+rage clicks, errors, several countries and devices) before the gateway binds :8080 — give it a minute.
+Afterwards a restart or another `docker compose up -d` skips straight to serving: the playground only
+seeds when the site has no events in that window. `make demo` is the same thing in one command.
 
 ## Open Grafana
 
@@ -63,10 +63,8 @@ The folder **GrepRUM** holds one dashboard per question:
 ```
 docker compose up -d
   greptime  starts
-  migrate   waits for GreptimeDB, runs `greprum migrate --wait 90`, exits 0
-  greprum   starts only after migrate succeeded
+  greprum   playground: waits for GreptimeDB, creates the tables + flows, seeds demo data once, serves
   grafana   provisions the GreptimeDB (MySQL) and Prometheus data sources + 11 dashboards
-seed        writes events straight into the `events` table; Flow rollups update by themselves
 ```
 
 The demo configuration is [docker/quickstart.toml](../docker/quickstart.toml). Its keys are public: it is

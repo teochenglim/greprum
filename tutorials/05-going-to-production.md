@@ -24,7 +24,14 @@ Run with it:
 GREPRUM_CONFIG=./greprum.toml docker compose up -d
 ```
 
-`migrate` runs again on each `up` and is idempotent.
+The container runs `greprum playground`: it waits for GreptimeDB, re-applies the idempotent migration on
+each `up`, and serves. Demo data is only generated when the config defines a site `demo` — your own config
+gets none. To pin this down explicitly, drop `--demo-data` from the `command` in a compose override and
+run the one-off migration yourself:
+
+```bash
+docker compose run --rm greprum migrate --config /etc/greprum/greprum.toml --wait 90
+```
 
 ## 2. Put a proxy in front
 
@@ -63,5 +70,5 @@ erasure, retention): [docs/privacy.md](../docs/privacy.md).
 
 ## 7. Upgrades
 
-Pin the image tag (`ghcr.io/teochenglim/greprum:0.12.0`), read the release notes in
+Pin the image tag (`ghcr.io/teochenglim/greprum:0.13.0`), read the release notes in
 [RELEASE/](../RELEASE/README.md), then `docker compose pull && docker compose up -d`.

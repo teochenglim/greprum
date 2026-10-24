@@ -9,6 +9,7 @@ pub mod jobs;
 pub mod metrics;
 pub mod migrate;
 pub mod model;
+pub mod playground;
 pub mod query;
 pub mod server;
 pub mod sink;

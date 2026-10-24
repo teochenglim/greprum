@@ -6,7 +6,7 @@ use greprum::{
     config::Config,
     jobs,
     metrics::Metrics,
-    migrate,
+    migrate, playground,
     query::{self, Reader as _, SqlxReader},
     server::{self, AppState},
     sink::{Sink, SqlxSink},
@@ -40,6 +40,27 @@ enum Cmd {
         /// Keep retrying for up to this many seconds while GreptimeDB starts (compose, CI).
         #[arg(long, default_value_t = 0)]
         wait: u64,
+    },
+    /// Init and serve in one process (ADR 0053): migrate, optional demo data, serve.
+    Playground {
+        #[arg(long, default_value = "greprum.toml")]
+        config: PathBuf,
+        /// Keep retrying the migration for up to this many seconds while GreptimeDB starts.
+        #[arg(long, default_value_t = 0)]
+        wait: u64,
+        /// Generate demo events for the demo site before serving. Skipped when the config
+        /// does not define that site, or when the site already has events in the window.
+        #[arg(long)]
+        demo_data: bool,
+        #[arg(long, default_value_t = 30_000)]
+        events: u64,
+        #[arg(long, default_value_t = 7)]
+        days: i64,
+        #[arg(long, default_value_t = 7)]
+        seed: u64,
+        /// Site to seed; defaults to the config's `demo` site.
+        #[arg(long)]
+        site: Option<String>,
     },
     /// Generate synthetic events (spike / load tests).
     Gen {
@@ -159,27 +180,32 @@ async fn main() -> Result<()> {
                     println!("-- {}\n{};\n", s.name, s.sql);
                 }
             } else {
-                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(wait);
-                let done = loop {
-                    match migrate::apply(
-                        &cfg.greptime.write_url,
-                        &cfg.greptime.ttl,
-                        &cfg.greptime.flow_prefix,
-                    )
-                    .await
-                    {
-                        Ok(done) => break done,
-                        Err(e) if std::time::Instant::now() < deadline => {
-                            eprintln!("database not ready ({e:#}); retrying");
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                        }
-                        Err(e) => return Err(e),
-                    }
-                };
-                for n in done {
+                for n in migrate_retry(&cfg, wait).await? {
                     println!("ok  {n}");
                 }
             }
+        }
+        Cmd::Playground {
+            config,
+            wait,
+            demo_data,
+            events,
+            days,
+            seed,
+            site,
+        } => {
+            let cfg = if config.exists() {
+                Config::load(&config)?
+            } else {
+                Config::default()
+            };
+            for n in migrate_retry(&cfg, wait).await? {
+                println!("ok  {n}");
+            }
+            if demo_data {
+                seed_demo(&cfg, seed, events, days, site.as_deref()).await?;
+            }
+            serve(cfg).await?
         }
         Cmd::Serve { config } => serve(Config::load(&config)?).await?,
         Cmd::Gen {
@@ -198,6 +224,63 @@ async fn main() -> Result<()> {
         } => spike_run(&url, &site, runs, days).await?,
     }
     Ok(())
+}
+
+/// Apply the migration, retrying every 2 s until `wait` seconds have passed.
+async fn migrate_retry(cfg: &Config, wait: u64) -> Result<Vec<&'static str>> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(wait);
+    loop {
+        match migrate::apply(
+            &cfg.greptime.write_url,
+            &cfg.greptime.ttl,
+            &cfg.greptime.flow_prefix,
+        )
+        .await
+        {
+            Ok(done) => return Ok(done),
+            Err(e) if std::time::Instant::now() < deadline => {
+                eprintln!("database not ready ({e:#}); retrying");
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+/// Seed demo data for `site` (default: the config's `demo` site, ADR 0053). Skipped when
+/// the site is not in the config or already has events in the generated window.
+async fn seed_demo(
+    cfg: &Config,
+    seed: u64,
+    events: u64,
+    days: i64,
+    site: Option<&str>,
+) -> Result<()> {
+    let Some(site) = site
+        .map(|s| s.to_string())
+        .or_else(|| playground::seed_site(cfg))
+    else {
+        eprintln!(
+            "playground: --demo-data ignored, the config defines no site \"{}\"",
+            playground::DEMO_SITE
+        );
+        return Ok(());
+    };
+    let now = server::system_clock()();
+    let reader = SqlxReader::connect(cfg.greptime.read_url()).await?;
+    if playground::demo_data_present(&reader, &site, now - days * query::DAY_MS).await? {
+        eprintln!("playground: site {site} already has events; skipping demo data");
+        return Ok(());
+    }
+    gen_events(
+        seed,
+        events,
+        &site,
+        days,
+        Some(cfg.greptime.write_url.clone()),
+        1.0,
+    )
+    .await
 }
 
 async fn serve(cfg: Config) -> Result<()> {

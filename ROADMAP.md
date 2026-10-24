@@ -138,6 +138,13 @@ Details: [RELEASE/v0.11.3.md](RELEASE/v0.11.3.md)
 
 Details: [RELEASE/v0.12.0.md](RELEASE/v0.12.0.md)
 
+## v0.13.0 — Playground: one container inits and serves 📋
+
+- [x] `greprum playground` (migrate + guarded demo seed + serve, ADR 0053); compose drops the one-shot `migrate` and `seed` containers, `make demo` is a plain `up`
+- [ ] Green CI/Release/Docker run on the tag; clean-machine first run (user)
+
+Details: [RELEASE/v0.13.0.md](RELEASE/v0.13.0.md)
+
 ## v1.0.0 — Launch hardening 📋
 
 - [x] Embedded UI go/no-go (no-go, ADR 0044), licence Apache-2.0 (ADR 0027), PDPA/erasure docs, contract freeze tests

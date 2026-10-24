@@ -10,12 +10,13 @@ Privacy-safe by default: no IP stored, no input values, no query strings.
 
 ```bash
 git clone https://github.com/teochenglim/greprum && cd greprum
-docker compose up -d                                  # GreptimeDB + GrepRUM + Prometheus + Grafana, tables created
-docker compose --profile demo run --rm seed           # optional: 30 000 demo events (or: make demo)
-open http://127.0.0.1:3000                            # Grafana, folder GrepRUM, Site = demo
+docker compose up -d       # GreptimeDB + one GrepRUM playground container (migrates, seeds 30 000 demo events, serves) + Prometheus + Grafana
+open http://127.0.0.1:3000 # Grafana, folder GrepRUM, Site = demo
 ```
 
-No file to edit: the stack starts with a public demo site (`pk_demo`, API key `demo-api-key`). Your own keys:
+No file to edit, no one-shot containers: the GrepRUM container runs `greprum playground` — it waits for
+GreptimeDB, creates the tables, seeds demo data (first start only) and serves. The stack starts with a
+public demo site (`pk_demo`, API key `demo-api-key`). Your own keys:
 [tutorials/05-going-to-production.md](tutorials/05-going-to-production.md).
 
 ![Overview](images/grafana_overview.png)

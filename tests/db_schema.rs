@@ -336,3 +336,30 @@ async fn ac_0_4_16_f_hostile_strings_are_bound_not_interpreted() {
     assert_eq!(r[0]["el_text"].as_str(), Some(nasty));
     assert_eq!(db.count("SELECT count(*) FROM events").await, 1);
 }
+
+// ---- AC0.13.2 playground reseed guard (ADR 0053) ---------------------------------------
+
+#[tokio::test]
+#[ignore]
+async fn ac_0_13_2_c_playground_reseeds_only_when_the_site_has_no_events() {
+    let db = fresh().await;
+    let site = format!("demo_{}", db.name);
+    let from = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as i64;
+    assert!(
+        !greprum::playground::demo_data_present(&db.reader, &site, from)
+            .await
+            .unwrap(),
+        "empty window: the playground seeds"
+    );
+    db.write(&[ev(&site, "$pageview", "v", "s", 0, from, "/")])
+        .await;
+    assert!(
+        greprum::playground::demo_data_present(&db.reader, &site, from)
+            .await
+            .unwrap(),
+        "any event in the window: a restarted playground must not duplicate rows"
+    );
+}

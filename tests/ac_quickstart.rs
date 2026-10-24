@@ -48,15 +48,14 @@ fn links(md: &str) -> Vec<String> {
 // ---- AC0.12.1 zero-edit compose -------------------------------------------------------
 
 #[test]
-fn ac_0_12_1_a_compose_runs_migrate_before_the_gateway_with_a_committed_demo_config() {
+fn ac_0_12_1_a_compose_is_zero_edit_and_the_gateway_inits_itself() {
     let c = read("docker-compose.yml");
     assert!(c.contains("${GREPRUM_CONFIG:-./docker/quickstart.toml}"));
-    assert!(c.contains("\n  migrate:"), "one-shot migrate service");
-    assert!(c.contains("\"--wait\"") && c.contains("restart: \"no\""));
     assert!(
-        c.contains("condition: service_completed_successfully"),
-        "greprum starts only after migrate"
+        c.contains("\"playground\"") && c.contains("\"--wait\""),
+        "the gateway waits for GreptimeDB and migrates in-process (ADR 0053)"
     );
+    assert!(c.contains("depends_on: [greptime]"));
     assert!(
         !c.lines()
             .filter(|l| !l.trim_start().starts_with('#'))
@@ -120,17 +119,27 @@ fn ac_0_12_1_c_migrate_wait_retries_while_the_database_is_down_then_gives_up() {
 // ---- AC0.12.2 demo data -------------------------------------------------------------
 
 #[test]
-fn ac_0_12_2_a_seed_service_is_an_opt_in_profile_with_a_fixed_seed() {
+fn ac_0_12_2_a_demo_data_comes_with_up_seeded_by_the_gateway_with_a_fixed_seed() {
     let c = read("docker-compose.yml");
-    let seed = &c[c.find("\n  seed:").expect("seed service")..];
-    let seed = &seed[..seed.find("\nvolumes:").unwrap_or(seed.len())];
+    let g = &c[c.find("\n  greprum:").expect("greprum service")..];
+    let g = &g[..g.find("\n  prometheus:").expect("prometheus service")];
     assert!(
-        seed.contains("profiles: [\"demo\"]"),
-        "not started by plain `up`"
+        g.contains("\"--demo-data\""),
+        "`up` seeds demo data; no separate run"
     );
-    assert!(seed.contains("\"gen\"") && seed.contains("\"--site\", \"demo\""));
-    assert!(seed.contains("\"--seed\", \"7\""));
-    assert!(seed.contains("service_completed_successfully"));
+    assert!(
+        g.contains("\"playground\"") && g.contains("\"--wait\""),
+        "seeded by the gateway itself, after the migration"
+    );
+    assert!(
+        !c.contains("profiles:"),
+        "demo data is not behind an opt-in profile any more"
+    );
+    // the playground defaults match the old seed run: 30 000 events, 7 days, seed 7
+    let h = bin().args(["playground", "--help"]).output().unwrap();
+    let help = String::from_utf8(h.stdout).unwrap();
+    assert!(help.contains("[default: 30000]"), "{help}");
+    assert!(help.matches("[default: 7]").count() >= 2, "{help}");
 }
 
 #[test]
@@ -165,12 +174,17 @@ fn ac_0_12_2_b_gen_is_deterministic_for_the_documented_seed() {
 }
 
 #[test]
-fn ac_0_12_2_c_make_demo_targets_exist_and_use_the_profile() {
+fn ac_0_12_2_c_make_demo_targets_exist_and_are_a_plain_up() {
     let m = read("Makefile");
     assert!(m.contains("\ndemo: "));
-    assert!(m.contains("--profile demo run --rm seed"));
     assert!(m.contains("\ndemo-local: docker-build"));
     assert!(m.contains("GREPRUM_IMAGE=$(IMAGE):$(VERSION_CURRENT)"));
+    assert!(
+        m.contains("docker compose up -d")
+            && !m.contains("--profile demo")
+            && !m.contains("run --rm seed"),
+        "no separate seed step: the gateway seeds itself"
+    );
 }
 
 // ---- AC0.12.3 tutorials with screenshots ------------------------------------------------
@@ -264,14 +278,7 @@ fn ac_0_12_3_d_commands_in_tutorials_name_real_targets_services_and_keys() {
         }
     }
     let compose = read("docker-compose.yml");
-    for svc in [
-        "greptime",
-        "migrate",
-        "greprum",
-        "prometheus",
-        "grafana",
-        "seed",
-    ] {
+    for svc in ["greptime", "greprum", "prometheus", "grafana"] {
         assert!(compose.contains(&format!("\n  {svc}:")), "{svc}");
     }
     assert!(all.contains("demo-api-key") && all.contains("pk_demo"));
@@ -361,5 +368,155 @@ fn ac_0_12_5_b_a_merge_job_combines_digests_and_every_job_has_a_timeout() {
     assert!(
         w.contains("test \"$TAG\" = \"v$(cat VERSION)\""),
         "tag matches VERSION"
+    );
+}
+
+// ---- AC0.13.1 one container inits and serves (ADR 0053) -------------------------------
+
+#[test]
+fn ac_0_13_1_a_the_stack_has_no_one_shot_containers_left() {
+    let c = read("docker-compose.yml");
+    let body = &c[..c.find("\nvolumes:").expect("volumes section")];
+    let services: Vec<&str> = body
+        .lines()
+        .filter_map(|l| {
+            let k = l.strip_prefix("  ")?;
+            let k = k.strip_suffix(':')?;
+            (!k.is_empty() && !k.contains(' ')).then_some(k)
+        })
+        .collect();
+    assert_eq!(
+        services,
+        vec!["greptime", "greprum", "prometheus", "grafana"]
+    );
+    assert!(
+        !c.contains("restart:") && !c.contains("service_completed_successfully"),
+        "no run-once service, nothing to sequence"
+    );
+    let g = &c[c.find("\n  greprum:").expect("greprum service")..];
+    let g = &g[..g.find("\n  prometheus:").expect("prometheus service")];
+    assert!(
+        g.contains("\"playground\"") && g.contains("\"--wait\"") && g.contains("\"--demo-data\""),
+        "the single greprum container migrates, seeds and serves"
+    );
+}
+
+#[test]
+fn ac_0_13_1_b_playground_migrates_before_it_serves_and_retries_like_migrate() {
+    let h = bin().args(["playground", "--help"]).output().unwrap();
+    assert!(h.status.success());
+    let help = String::from_utf8(h.stdout).unwrap();
+    for f in [
+        "--config",
+        "--wait",
+        "--demo-data",
+        "--events",
+        "--days",
+        "--seed",
+        "--site",
+    ] {
+        assert!(help.contains(f), "playground flag {f}");
+    }
+    // Nothing listens on 127.0.0.1:1: the migration retries for the whole wait, then gives
+    // up — so `serve` (which would bind 8080 and block) is never reached.
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("c.toml");
+    fs::write(
+        &cfg,
+        "[greptime]\nwrite_url = \"mysql://root@127.0.0.1:1/public\"\n",
+    )
+    .unwrap();
+    let t = Instant::now();
+    let o = bin()
+        .args(["playground", "--wait", "3", "--config"])
+        .arg(&cfg)
+        .output()
+        .unwrap();
+    assert!(!o.status.success(), "still fails after the wait");
+    assert!(
+        t.elapsed() >= Duration::from_secs(3),
+        "retried for the whole wait, took {:?}",
+        t.elapsed()
+    );
+    assert!(String::from_utf8_lossy(&o.stderr).contains("retrying"));
+}
+
+// ---- AC0.13.2 demo data seeds once, only for a configured site -------------------------
+
+#[test]
+fn ac_0_13_2_a_demo_data_only_seeds_a_site_the_config_defines() {
+    let with = greprum::config::Config {
+        sites: vec![greprum::config::SiteConfig {
+            id: "demo".into(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    assert_eq!(
+        greprum::playground::seed_site(&with).as_deref(),
+        Some("demo"),
+        "quickstart-style config gets demo data"
+    );
+    let without = greprum::config::Config {
+        sites: vec![greprum::config::SiteConfig {
+            id: "prod".into(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    assert_eq!(
+        greprum::playground::seed_site(&without),
+        None,
+        "a production config swapped in via GREPRUM_CONFIG gets no synthetic rows"
+    );
+}
+
+#[test]
+fn ac_0_13_2_b_the_reseed_guard_is_site_scoped_and_time_capped() {
+    let q = greprum::playground::has_events("demo", 1_000);
+    assert!(
+        q.sql.contains("site_id = ?") && q.sql.contains("ts >= ?"),
+        "bound site, capped window (ADR 0024): {}",
+        q.sql
+    );
+    assert_eq!(
+        q.binds,
+        vec![
+            greprum::query::Bind::Str("demo".into()),
+            greprum::query::Bind::Int(1_000),
+        ]
+    );
+}
+
+#[test]
+fn ac_0_13_3_a_docs_describe_the_playground_not_one_shot_containers() {
+    for f in [
+        "README.md",
+        "tutorials/01-quickstart.md",
+        "tutorials/05-going-to-production.md",
+    ] {
+        let d = read(f);
+        assert!(d.contains("playground"), "{f} names the playground command");
+        assert!(
+            !d.contains("--profile demo") && !d.contains("run --rm seed"),
+            "{f} still documents the one-shot seed container"
+        );
+    }
+}
+
+#[test]
+fn ac_0_13_3_b_makefile_release_notes_and_adr_agree_with_the_compose_file() {
+    let m = read("Makefile");
+    assert!(m.contains("\ndemo: ") && m.contains("docker compose up -d"));
+    assert!(
+        read("RELEASE/README.md").contains("v0.13.0"),
+        "the release table lists v0.13.0"
+    );
+    let adr = read("docs/adr/0053-playground-inits-and-serves-in-one-process.md");
+    assert!(adr.contains("# ADR 0053") && adr.contains("Status: Accepted"));
+    let c = read("docker-compose.yml");
+    assert!(
+        c.contains("ADR 0053"),
+        "compose points at the decision that removed the one-shots"
     );
 }

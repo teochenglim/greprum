@@ -117,9 +117,8 @@ docker-build: ## Build the container image (tag :$(VERSION_CURRENT))
 	docker build --build-arg VERSION=v$(VERSION_CURRENT) -t $(IMAGE):$(VERSION_CURRENT) -t $(IMAGE):latest .
 
 .PHONY: demo
-demo: ## Whole stack + demo data from the published image (Grafana http://127.0.0.1:3000)
+demo: ## Whole stack from the published image; the gateway seeds demo data itself (Grafana http://127.0.0.1:3000)
 	docker compose up -d
-	docker compose --profile demo run --rm seed
 	@echo "Grafana: http://127.0.0.1:$${GRAFANA_PORT:-3000}   demo page: python3 -m http.server 8000 -d docker/demo-site"
 
 .PHONY: demo-local
