@@ -1,0 +1,86 @@
+name: Security
+
+# SAST + filesystem vulnerability scan, ported from cogent. Complements the RustSec audit in ci.yml
+# (`supply-chain`): that job gates the Cargo lockfile, this one adds Semgrep over the Rust, JS
+# tracker, Dockerfile and compose sources, and Trivy over the whole tree (lockfile, Dockerfile).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'   # weekly Monday 6 AM UTC: new advisories land without a code change
+
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF to the GitHub Security tab
+
+jobs:
+  # SEMGREP_APP_TOKEN is optional: set it in repo secrets to push results to the Semgrep Cloud
+  # dashboard. Without it, findings are printed to the log and uploaded as SARIF.
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Scan
+        run: |
+          semgrep scan \
+            --config p/rust \
+            --config p/javascript \
+            --config p/dockerfile \
+            --config p/sql-injection \
+            --config p/secrets \
+            --config p/owasp-top-ten \
+            --exclude target \
+            --exclude node_modules \
+            --sarif \
+            --output semgrep.sarif \
+            --error
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  # Fails on CRITICAL or HIGH findings in Cargo.lock, the Dockerfile base image and tracker deps.
+  trivy:
+    name: Trivy scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Scan filesystem (fail on CRITICAL/HIGH CVEs)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+      - name: Scan filesystem (SARIF, uploaded to the Security tab)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy.sarif
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy

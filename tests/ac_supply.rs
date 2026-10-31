@@ -129,3 +129,35 @@ fn ac_0_10_6_d_bump_target_uses_the_pin_script_and_no_tag_refs_remain_in_the_doc
     assert!(m.contains("github-action-bump:") && m.contains("scripts/pin-actions.py"));
     assert!(read("scripts/pin-actions.py").contains("git\", \"ls-remote"));
 }
+
+#[test]
+fn ac_0_13_4_a_security_workflow_runs_semgrep_and_trivy_weekly_and_on_prs() {
+    let s = read(".github/workflows/security.yml");
+    for needle in [
+        "semgrep scan",
+        "p/rust",
+        "p/sql-injection",
+        "p/secrets",
+        "--error",
+        "aquasecurity/trivy-action",
+        "severity: CRITICAL,HIGH",
+        "exit-code: '1'",
+        "upload-sarif",
+        "security-events: write",
+        "schedule:",
+        "pull_request:",
+    ] {
+        assert!(s.contains(needle), "{needle}");
+    }
+}
+
+#[test]
+fn ac_0_13_4_b_security_workflow_is_least_privilege_and_holds_no_inline_secrets() {
+    let s = read(".github/workflows/security.yml");
+    assert!(s.contains("contents: read"));
+    assert!(!s.contains("contents: write") && !s.contains("packages: write"));
+    // The only secret reference is the optional Semgrep token, read from the secrets store.
+    for line in s.lines().filter(|l| l.contains("secrets.")) {
+        assert!(line.contains("${{ secrets.SEMGREP_APP_TOKEN }}"), "{line}");
+    }
+}

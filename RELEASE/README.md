@@ -22,6 +22,7 @@ known limitations and the release checklist. Mapping to PRD §10 phases:
 | [v0.12.0](v0.12.0.md) | Quickstart and tutorials | — | zero-edit `docker compose up`, `migrate --wait`, demo seed, `tutorials/` with screenshots, native per-arch Docker build | 0.11.3 |
 | [v0.13.0](v0.13.0.md) | Playground: one container inits and serves | — | `greprum playground` (migrate + guarded demo seed + serve, ADR 0053); compose drops both one-shot containers | 0.12 |
 | [v0.13.1](v0.13.1.md) | Patch: security advisories in the lockfile | — | ctutils 0.4.5 (RUSTSEC-2026-0385), tokio 1.54.1 (RUSTSEC-2026-0386); audit green | 0.13 |
+| [v0.13.2](v0.13.2.md) | Patch: Semgrep + Trivy security scan in CI | — | `security.yml` (Semgrep SAST, Trivy fs, SARIF, weekly) ported from cogent | 0.13 |
 | [v1.0.0](v1.0.0.md) | Launch hardening | 6 (decision) | embedded-UI go/no-go, licence (ADR 0027), PDPA review | 0.6 |
 
 ## Per-release workflow

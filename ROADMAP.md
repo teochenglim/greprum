@@ -152,6 +152,13 @@ Details: [RELEASE/v0.13.0.md](RELEASE/v0.13.0.md)
 
 Details: [RELEASE/v0.13.1.md](RELEASE/v0.13.1.md)
 
+## v0.13.2 — Patch: Semgrep + Trivy security scan in CI 📋
+
+- [x] `.github/workflows/security.yml` (ported from cogent): Semgrep SAST + Trivy fs scan, SARIF to the Security tab, weekly schedule
+- [ ] Green Security run on the tag; triage first findings (user)
+
+Details: [RELEASE/v0.13.2.md](RELEASE/v0.13.2.md)
+
 ## v1.0.0 — Launch hardening 📋
 
 - [x] Embedded UI go/no-go (no-go, ADR 0044), licence Apache-2.0 (ADR 0027), PDPA/erasure docs, contract freeze tests
